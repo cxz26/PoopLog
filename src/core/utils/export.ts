@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 
 export const exportToCSV = async () => {
   const poopLogs = await db.poopLogs.toArray();
-  const dailyLogs = await db.dailyLogs.toArray();
   
   // Convert poop logs array fields to strings
   const formattedLogs = poopLogs.map(log => ({
@@ -23,13 +22,15 @@ export const exportToCSV = async () => {
 export const exportToJSON = async () => {
   const poopLogs = await db.poopLogs.toArray();
   const dailyLogs = await db.dailyLogs.toArray();
+  const customTags = await db.customTags.toArray();
   
   const backup = {
     version: 1,
     exportDate: new Date().toISOString(),
     data: {
       poopLogs,
-      dailyLogs
+      dailyLogs,
+      customTags
     }
   };
   
@@ -57,7 +58,7 @@ export const exportToPDF = async () => {
   y += 10;
   
   doc.setFontSize(10);
-  recent.forEach((log, index) => {
+  recent.forEach((log) => {
     if (y > 270) {
       doc.addPage();
       y = 20;
@@ -73,28 +74,30 @@ export const exportToPDF = async () => {
 };
 
 export const importFromJSON = async (file: File): Promise<boolean> => {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
         const content = e.target?.result as string;
         const backup = JSON.parse(content);
         
-        if (!backup.data || !backup.data.poopLogs) {
+        if (!backup.data || !Array.isArray(backup.data.poopLogs) || !backup.data.poopLogs.every(isValidLog)) {
           throw new Error('Invalid backup file');
         }
 
         // Wipe and restore
-        await db.transaction('rw', db.poopLogs, db.dailyLogs, async () => {
+        await db.transaction('rw', db.poopLogs, db.dailyLogs, db.customTags, async () => {
           await db.poopLogs.clear();
           await db.dailyLogs.clear();
+          await db.customTags.clear();
           
           if (backup.data.poopLogs.length > 0) {
             await db.poopLogs.bulkAdd(backup.data.poopLogs);
           }
-          if (backup.data.dailyLogs.length > 0) {
+          if (Array.isArray(backup.data.dailyLogs) && backup.data.dailyLogs.length > 0) {
             await db.dailyLogs.bulkAdd(backup.data.dailyLogs);
           }
+          if (Array.isArray(backup.data.customTags) && backup.data.customTags.length > 0) await db.customTags.bulkAdd(backup.data.customTags);
         });
         
         resolve(true);
@@ -111,13 +114,15 @@ export const importFromJSON = async (file: File): Promise<boolean> => {
 export const getBackupData = async (): Promise<string> => {
   const poopLogs = await db.poopLogs.toArray();
   const dailyLogs = await db.dailyLogs.toArray();
+  const customTags = await db.customTags.toArray();
   
   const backup = {
     version: 1,
     exportDate: new Date().toISOString(),
     data: {
       poopLogs,
-      dailyLogs
+      dailyLogs,
+      customTags
     }
   };
   
@@ -128,14 +133,15 @@ export const restoreFromData = async (jsonString: string): Promise<boolean> => {
   try {
     const backup = JSON.parse(jsonString);
     
-    if (!backup.data || !backup.data.poopLogs) {
+    if (!backup.data || !Array.isArray(backup.data.poopLogs) || !backup.data.poopLogs.every(isValidLog)) {
       throw new Error('Invalid backup data format');
     }
 
     // Wipe and restore
-    await db.transaction('rw', db.poopLogs, db.dailyLogs, async () => {
+    await db.transaction('rw', db.poopLogs, db.dailyLogs, db.customTags, async () => {
       await db.poopLogs.clear();
       await db.dailyLogs.clear();
+      await db.customTags.clear();
       
       if (backup.data.poopLogs.length > 0) {
         await db.poopLogs.bulkAdd(backup.data.poopLogs);
@@ -143,6 +149,7 @@ export const restoreFromData = async (jsonString: string): Promise<boolean> => {
       if (backup.data.dailyLogs && backup.data.dailyLogs.length > 0) {
         await db.dailyLogs.bulkAdd(backup.data.dailyLogs);
       }
+      if (Array.isArray(backup.data.customTags) && backup.data.customTags.length > 0) await db.customTags.bulkAdd(backup.data.customTags);
     });
     
     return true;
@@ -150,6 +157,13 @@ export const restoreFromData = async (jsonString: string): Promise<boolean> => {
     console.error("Restore error", err);
     return false;
   }
+};
+
+const isValidLog = (value: unknown): boolean => {
+  if (!value || typeof value !== 'object') return false;
+  const log = value as Record<string, unknown>;
+  if (typeof log.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(log.date) || Number.isNaN(Date.parse(`${log.date}T00:00:00`))) return false;
+  return log.bristolType === undefined || (typeof log.bristolType === 'number' && log.bristolType >= 1 && log.bristolType <= 7);
 };
 
 const downloadFile = (content: string, filename: string, contentType: string) => {

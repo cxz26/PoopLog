@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { cn } from '@/src/core/utils/cn';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Chip } from '@/src/shared/components/Chip';
 import { SliderCard } from '@/src/shared/components/SliderCard';
 import { getTodayDateString, getCurrentTimeString } from '@/src/core/utils/date';
 import { useLogStore } from '@/src/core/stores/useLogStore';
-import { PoopLog } from '@/src/core/services/database';
+import { db, PoopLog } from '@/src/core/services/database';
 import { useCustomTagsStore } from '@/src/core/stores/useCustomTagsStore';
 import { useSettingsStore } from '@/src/core/stores/useSettingsStore';
 import { CustomTagInput } from './CustomTagInput';
@@ -46,7 +46,9 @@ const CONFIDENCES = ['Very Accurate', 'Mostly Remember', 'Rough Estimate', 'Not 
 
 export const NewLogFlow: React.FC = () => {
   const navigate = useNavigate();
-  const { savePoopLog } = useLogStore();
+  const { id } = useParams();
+  const editId = id ? Number(id) : undefined;
+  const { savePoopLog, updatePoopLog } = useLogStore();
   const { tags, loadTags } = useCustomTagsStore();
   const { preferredWaterUnit } = useSettingsStore();
   
@@ -66,7 +68,8 @@ export const NewLogFlow: React.FC = () => {
 
   const [step, setStep] = useState(1);
   const [isSuccess, setIsSuccess] = useState(false);
-  const totalSteps = 12;
+  const [isSaving, setIsSaving] = useState(false);
+  const totalSteps = 11;
 
   // View States
   const [timeMode, setTimeMode] = useState<'exact' | 'approx'>('approx');
@@ -99,6 +102,13 @@ export const NewLogFlow: React.FC = () => {
     notes: ''
   });
 
+  useEffect(() => {
+    if (!editId || !Number.isSafeInteger(editId)) return;
+    db.poopLogs.get(editId).then(existing => {
+      if (existing?.hasBowelMovement !== false) setFormData(existing);
+    });
+  }, [editId]);
+
   const updateForm = (updates: Partial<PoopLog>) => {
     setFormData(prev => ({ ...prev, ...updates }));
   };
@@ -107,6 +117,7 @@ export const NewLogFlow: React.FC = () => {
   const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
   const handleSave = async () => {
+    if (isSaving) return;
     if (!formData.bristolType || !formData.amount || !formData.difficulty || !formData.color) {
       alert("Please fill in the recommended fields (Time, Bristol, Amount, Difficulty, Color). You can select 'Not Sure' if you don't remember.");
       return;
@@ -121,11 +132,18 @@ export const NewLogFlow: React.FC = () => {
       else if (dataToSave.waterUnit === 'Cups') dataToSave.waterML = dataToSave.waterDetailed * 250;
     }
 
-    await savePoopLog(dataToSave as Omit<PoopLog, 'id'|'createdAt'|'updatedAt'>);
-    setIsSuccess(true);
-    setTimeout(() => {
-      navigate('/');
-    }, 1500);
+    setIsSaving(true);
+    try {
+      if (editId) {
+        await updatePoopLog(editId, dataToSave);
+      } else {
+        await savePoopLog(dataToSave as Omit<PoopLog, 'id'|'createdAt'|'updatedAt'>);
+      }
+      setIsSuccess(true);
+      setTimeout(() => navigate('/'), 1500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleArrayItem = (key: keyof PoopLog, item: string) => {
@@ -148,6 +166,10 @@ export const NewLogFlow: React.FC = () => {
         return (
           <div className="space-y-6">
             <h2 className="text-3xl font-bold">When was it?</h2>
+            <div>
+              <label htmlFor="log-date" className="text-sm font-bold text-text-main/60">Date</label>
+              <input id="log-date" type="date" max={getTodayDateString()} value={formData.date || ''} onChange={e => updateForm({ date: e.target.value })} className="mt-1 w-full bg-surface border border-border-main rounded-xl px-4 py-3 font-semibold outline-none focus:border-primary" />
+            </div>
             
             <div className="flex bg-surface p-1 rounded-2xl border border-border-main mb-6">
               <button 
@@ -488,7 +510,7 @@ export const NewLogFlow: React.FC = () => {
               placeholder="Any additional notes..."
               className="flex-1 bg-surface border border-border-main rounded-[24px] p-6 text-lg outline-none focus:border-primary resize-none min-h-[200px]"
             />
-            <Button className="w-full mt-4" onClick={handleSave}>Save Log</Button>
+            <Button className="w-full mt-4" onClick={handleSave} isLoading={isSaving}>{editId ? 'Update Log' : 'Save Log'}</Button>
           </div>
         );
     }
@@ -504,8 +526,8 @@ export const NewLogFlow: React.FC = () => {
         >
           <CheckCircle2 size={64} />
         </motion.div>
-        <h2 className="text-3xl font-bold mb-2">Saved Successfully</h2>
-        <p className="text-text-main/70">Your log has been recorded.</p>
+        <h2 className="text-3xl font-bold mb-2">{editId ? 'Updated Successfully' : 'Saved Successfully'}</h2>
+        <p className="text-text-main/70">Your log has been {editId ? 'updated' : 'recorded'}.</p>
       </div>
     );
   }
@@ -521,7 +543,7 @@ export const NewLogFlow: React.FC = () => {
             <div key={i} className={cn("h-1.5 flex-1 rounded-full transition-colors", i + 1 <= step ? "bg-primary" : "bg-primary/20")} />
           ))}
         </div>
-        <div className="text-sm font-bold text-primary w-8 text-right">{step}/{totalSteps - 1}</div>
+        <div className="text-sm font-bold text-primary w-8 text-right">{step}/{totalSteps}</div>
       </header>
 
       <main className="flex-1 overflow-y-auto px-6 pb-8">

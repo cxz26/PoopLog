@@ -74,5 +74,9 @@ export const router = createBrowserRouter([
   {
     path: '/log/:id',
     element: <SuspenseWrapper><LogDetailPage /></SuspenseWrapper>
+  },
+  {
+    path: '/log/:id/edit',
+    element: <SuspenseWrapper><NewLogFlow /></SuspenseWrapper>
   }
 ]);

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { History, ArrowRight, Search, Filter, X } from 'lucide-react';
+import { History, ArrowRight, Search, Filter } from 'lucide-react';
 import { EmptyState } from '@/src/shared/components/EmptyState';
 import { SectionCard } from '@/src/shared/components/SectionCard';
 import { Chip } from '@/src/shared/components/Chip';

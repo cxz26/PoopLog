@@ -15,7 +15,7 @@ import { PWAUpdater } from './shared/components/PWAUpdater';
 
 export default function App() {
   const { theme } = useSettingsStore();
-  const { pin, requireAuthOnLaunch, isAuthenticated, lockApp } = useSecurityStore();
+  const { pinHash, requireAuthOnLaunch, isAuthenticated, lockApp } = useSecurityStore();
 
   useEffect(() => {
     // Initialize required services on app start
@@ -39,7 +39,7 @@ export default function App() {
     }
   }, [theme]);
 
-  const showLockScreen = pin && requireAuthOnLaunch && !isAuthenticated;
+  const showLockScreen = pinHash && requireAuthOnLaunch && !isAuthenticated;
 
   return (
     <>
@@ -49,4 +49,3 @@ export default function App() {
     </>
   );
 }
-

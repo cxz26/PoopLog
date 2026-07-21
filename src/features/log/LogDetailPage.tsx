@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Trash2, Activity, Droplet, Moon, Apple } from 'lucide-react';
+import { ChevronLeft, Trash2, Pencil, Activity, Droplet, Moon, Apple } from 'lucide-react';
 import { db, PoopLog } from '@/src/core/services/database';
 import { formatDateDisplay } from '@/src/core/utils/date';
 import { useLogStore } from '@/src/core/stores/useLogStore';
@@ -12,15 +12,27 @@ export const LogDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const { deletePoopLog } = useLogStore();
   const [log, setLog] = useState<PoopLog | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (id) {
-      db.poopLogs.get(Number(id)).then(setLog);
+      const numericId = Number(id);
+      if (!Number.isSafeInteger(numericId)) {
+        setIsLoaded(true);
+        return;
+      }
+      db.poopLogs.get(numericId).then(result => {
+        setLog(result ?? null);
+        setIsLoaded(true);
+      });
+    } else {
+      setIsLoaded(true);
     }
   }, [id]);
 
-  if (!log) return null;
+  if (!isLoaded) return <div className="min-h-screen flex items-center justify-center bg-background text-text-main/60" role="status">Loading record…</div>;
+  if (!log) return <div className="min-h-screen flex flex-col gap-4 items-center justify-center bg-background text-text-main/60"><p>Record not found.</p><Button onClick={() => navigate('/history')}>View History</Button></div>;
 
   const handleDelete = async () => {
     try {
@@ -135,7 +147,7 @@ export const LogDetailPage: React.FC = () => {
                  {log.sleepType === 'simple' ? log.sleepSimple : (
                    log.sleepDurationMinutes ? `${Math.floor(log.sleepDurationMinutes / 60)} hr ${log.sleepDurationMinutes % 60} min` : `${log.sleepHours || 0}h`
                  )} 
-                 {log.sleepQuality && log.sleepQuality !== 'Not Sure' && log.sleepType === 'exact' ? ` (${log.sleepQuality})` : ''}
+                 {log.sleepQuality && log.sleepType === 'exact' ? ` (${log.sleepQuality})` : ''}
                </div>
              </div>
              <div className="flex-1 text-center pl-4">
@@ -160,6 +172,7 @@ export const LogDetailPage: React.FC = () => {
       </main>
 
       <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-background via-background to-transparent flex gap-4">
+        {log.hasBowelMovement !== false && <Button variant="outlined" className="flex-1 bg-surface" leftIcon={<Pencil size={18} />} onClick={() => navigate(`/log/${log.id}/edit`)}>Edit</Button>}
         <Button 
           variant="outlined" 
           className="flex-1 bg-surface border-error text-error hover:bg-error/10" 

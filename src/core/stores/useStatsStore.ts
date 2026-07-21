@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { db, PoopLog } from '../services/database';
-import { TimeFilter, filterLogsByTime, calculateStreaks } from '../utils/analytics';
-import { differenceInDays, parseISO } from 'date-fns';
+import { TimeFilter } from '../utils/analytics';
 
 interface StatsState {
   allPoopLogs: PoopLog[];

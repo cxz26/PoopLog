@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Delete, Fingerprint } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Delete } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface PinPadProps {
   onPinEntered: (pin: string) => void;
-  showBiometric?: boolean;
-  onBiometricClick?: () => void;
   error?: string | null;
   title?: string;
   subtitle?: string;
@@ -13,8 +11,6 @@ interface PinPadProps {
 
 export const PinPad: React.FC<PinPadProps> = ({ 
   onPinEntered, 
-  showBiometric, 
-  onBiometricClick, 
   error,
   title = "Enter PIN",
   subtitle = "Please enter your 4-digit PIN"
@@ -84,17 +80,7 @@ export const PinPad: React.FC<PinPadProps> = ({
           </button>
         ))}
         
-        {/* Bottom row */}
-        <div className="flex items-center justify-center">
-          {showBiometric && (
-            <button
-              onClick={onBiometricClick}
-              className="w-16 h-16 rounded-full flex items-center justify-center text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Fingerprint size={32} />
-            </button>
-          )}
-        </div>
+        <div />
         
         <button
           onClick={() => handleKeyPress('0')}
@@ -106,6 +92,7 @@ export const PinPad: React.FC<PinPadProps> = ({
         <div className="flex items-center justify-center">
           <button
             onClick={handleDelete}
+            aria-label="Delete PIN digit"
             className="w-16 h-16 rounded-full flex items-center justify-center text-text-main hover:bg-border-main/50 transition-colors"
           >
             <Delete size={28} />

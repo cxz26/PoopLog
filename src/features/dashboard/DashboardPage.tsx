@@ -43,7 +43,7 @@ export const DashboardPage: React.FC = () => {
     let avgFreq = 0;
     if (bowelMovements.length > 0) {
       const firstLogDate = parseISO(bowelMovements[bowelMovements.length - 1].date);
-      const days = differenceInDays(new Date(), firstLogDate) || 1;
+      const days = Math.max(1, differenceInDays(new Date(), firstLogDate) + 1);
       avgFreq = Math.round((bowelMovements.length / days) * 10) / 10;
     }
 

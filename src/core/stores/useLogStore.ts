@@ -45,22 +45,22 @@ export const useLogStore = create<LogState>((set, get) => ({
 
   checkInNo: async (dateStr: string) => {
     const now = Date.now();
-    await db.poopLogs.add({
-      date: dateStr,
-      hasBowelMovement: false,
-      createdAt: now,
-      updatedAt: now,
+    await db.transaction('rw', db.poopLogs, db.dailyLogs, async () => {
+      const existing = await db.poopLogs.where('date').equals(dateStr).toArray();
+      if (existing.some(log => log.hasBowelMovement !== false) || existing.some(log => log.hasBowelMovement === false)) return;
+      await db.poopLogs.add({ date: dateStr, hasBowelMovement: false, createdAt: now, updatedAt: now });
+      await db.dailyLogs.put({ date: dateStr, checkedIn: true, createdAt: now, updatedAt: now });
     });
     await get().loadTodayData(dateStr);
   },
 
   savePoopLog: async (log) => {
     const now = Date.now();
-    await db.poopLogs.add({
-      ...log,
-      hasBowelMovement: true,
-      createdAt: now,
-      updatedAt: now,
+    await db.transaction('rw', db.poopLogs, db.dailyLogs, async () => {
+      const existing = await db.poopLogs.where('date').equals(log.date).toArray();
+      await Promise.all(existing.filter(item => item.hasBowelMovement === false && item.id !== undefined).map(item => db.poopLogs.delete(item.id!)));
+      await db.poopLogs.add({ ...log, hasBowelMovement: true, createdAt: now, updatedAt: now });
+      await db.dailyLogs.put({ date: log.date, checkedIn: true, createdAt: now, updatedAt: now });
     });
     await get().loadTodayData(log.date);
   },

@@ -21,3 +21,14 @@
     @apply bg-background text-text-main font-sans antialiased;
   }
 }
+
+html.dark {
+  --color-background: #181715;
+  --color-surface: #24211e;
+  --color-primary: #c7b49d;
+  --color-success: #9fc69b;
+  --color-warning: #e4b879;
+  --color-danger: #e18b8b;
+  --color-text-main: #f5f0e9;
+  --color-border-main: #4a453e;
+}

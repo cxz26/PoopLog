@@ -11,7 +11,7 @@ import { cn } from '@/src/core/utils/cn';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, CartesianGrid
 } from 'recharts';
-import { Activity, Flame, Calendar as CalIcon } from 'lucide-react';
+import { Activity, Flame } from 'lucide-react';
 import { useSettingsStore } from '@/src/core/stores/useSettingsStore';
 
 const TIME_FILTERS: { label: string, value: TimeFilter }[] = [
@@ -180,14 +180,14 @@ export const StatisticsPage: React.FC = () => {
   return (
     <div className="flex flex-col pt-2 min-h-0 space-y-6 w-full">
       {/* Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+      <div className="flex flex-wrap items-center gap-2 pb-2">
         {TIME_FILTERS.map(f => (
           <Chip 
             key={f.value} 
             label={f.label} 
             selected={timeFilter === f.value} 
             onClick={() => setTimeFilter(f.value)} 
-            className="snap-start whitespace-nowrap"
+            className="whitespace-nowrap px-2.5 text-xs sm:px-4 sm:text-sm"
           />
         ))}
       </div>
@@ -292,7 +292,7 @@ export const StatisticsPage: React.FC = () => {
             <ResponsiveContainer width="100%" height={250}>
               <PieChart>
                 <Pie data={stoolDistData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
-                  {stoolDistData.map((entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                  {stoolDistData.map((_, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }} />
               </PieChart>

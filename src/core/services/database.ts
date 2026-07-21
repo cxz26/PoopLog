@@ -69,6 +69,12 @@ export class AppDatabase extends Dexie {
     this.version(3).stores({
       customTags: '++id, category, name'
     });
+
+    this.version(4).stores({
+      dailyLogs: '++id, &date',
+      poopLogs: '++id, date, dailyLogId',
+      customTags: '++id, category, name'
+    });
   }
 
   async initialize() {

@@ -15,5 +15,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PWA support (offline, installable).
 - JSON/CSV/PDF export and import.
 - Local PIN lock.
-- Biometric mock support.
+- Removed unsupported simulated biometric authentication.
 - Dark/Light/System theme toggle.

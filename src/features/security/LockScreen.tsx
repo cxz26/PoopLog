@@ -5,22 +5,14 @@ import { Activity } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export const LockScreen: React.FC = () => {
-  const { pin, useBiometric, setAuthenticated } = useSecurityStore();
+  const { verifyPin, setAuthenticated } = useSecurityStore();
   const [error, setError] = useState<string | null>(null);
 
-  const handlePinEntered = (enteredPin: string) => {
-    if (enteredPin === pin) {
+  const handlePinEntered = async (enteredPin: string) => {
+    if (await verifyPin(enteredPin)) {
       setAuthenticated(true);
     } else {
       setError('Incorrect PIN');
-    }
-  };
-
-  const handleBiometric = () => {
-    // In a real app, we'd use WebAuthn or capacitor biometric API.
-    // For now, we simulate success since we are a web app.
-    if (window.confirm("Simulate Biometric Authentication Success?")) {
-      setAuthenticated(true);
     }
   };
 
@@ -37,8 +29,6 @@ export const LockScreen: React.FC = () => {
       <div className="flex-1 w-full flex items-center justify-center">
          <PinPad 
            onPinEntered={handlePinEntered}
-           showBiometric={useBiometric}
-           onBiometricClick={handleBiometric}
            error={error}
            title="App Locked"
            subtitle="Please authenticate to continue"

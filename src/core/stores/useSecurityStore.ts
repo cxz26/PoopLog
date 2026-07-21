@@ -2,14 +2,13 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface SecurityState {
-  pin: string | null;
-  useBiometric: boolean;
+  pinHash: string | null;
   requireAuthOnLaunch: boolean;
   
   isAuthenticated: boolean;
   
-  setPin: (pin: string | null) => void;
-  setUseBiometric: (use: boolean) => void;
+  setPin: (pin: string | null) => Promise<void>;
+  verifyPin: (pin: string) => Promise<boolean>;
   setRequireAuthOnLaunch: (require: boolean) => void;
   setAuthenticated: (auth: boolean) => void;
   
@@ -19,19 +18,18 @@ interface SecurityState {
 export const useSecurityStore = create<SecurityState>()(
   persist(
     (set, get) => ({
-      pin: null,
-      useBiometric: false,
+      pinHash: null,
       requireAuthOnLaunch: false,
       isAuthenticated: false,
       
-      setPin: (pin) => {
+      setPin: async (pin) => {
         if (!pin) {
-          set({ pin: null, requireAuthOnLaunch: false, useBiometric: false });
+          set({ pinHash: null, requireAuthOnLaunch: false });
         } else {
-          set({ pin });
+          set({ pinHash: await hashPin(pin) });
         }
       },
-      setUseBiometric: (useBiometric) => set({ useBiometric }),
+      verifyPin: async (pin) => (get().pinHash === await hashPin(pin)),
       setRequireAuthOnLaunch: (requireAuthOnLaunch) => set({ requireAuthOnLaunch }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       
@@ -44,10 +42,18 @@ export const useSecurityStore = create<SecurityState>()(
     {
       name: 'pooplog-security',
       partialize: (state) => ({ 
-        pin: state.pin, 
-        useBiometric: state.useBiometric, 
-        requireAuthOnLaunch: state.requireAuthOnLaunch 
-      }), // Don't persist isAuthenticated
+        pinHash: state.pinHash,
+        requireAuthOnLaunch: state.requireAuthOnLaunch,
+        isAuthenticated: false
+      }),
+      version: 2,
+      migrate: () => ({ pinHash: null, requireAuthOnLaunch: false, isAuthenticated: false }),
     }
   )
 );
+
+const hashPin = async (pin: string): Promise<string> => {
+  const bytes = new TextEncoder().encode(pin);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
+};

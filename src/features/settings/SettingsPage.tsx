@@ -61,14 +61,14 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleSetPin = () => {
-    if (security.pin) {
+    if (security.pinHash) {
       if (window.confirm("Remove your PIN?")) {
-        security.setPin(null);
+        void security.setPin(null);
       }
     } else {
       const pin = window.prompt("Enter a 4-digit PIN:");
       if (pin && /^\d{4}$/.test(pin)) {
-        security.setPin(pin);
+        void security.setPin(pin);
         alert("PIN set successfully.");
       } else {
         alert("Invalid PIN. Must be 4 digits.");
@@ -165,11 +165,11 @@ export const SettingsPage: React.FC = () => {
         <SettingsItem 
           icon={<Lock />} 
           title="App Lock PIN" 
-          subtitle={security.pin ? "PIN is set" : "No PIN set"}
+          subtitle={security.pinHash ? "PIN is set" : "No PIN set"}
           onClick={handleSetPin}
-          action={<span className="text-primary font-bold">{security.pin ? 'Remove' : 'Set PIN'}</span>}
+          action={<span className="text-primary font-bold">{security.pinHash ? 'Remove' : 'Set PIN'}</span>}
         />
-        {security.pin && (
+        {security.pinHash && (
           <SettingsItem 
             title="Require Auth on Launch" 
             action={
