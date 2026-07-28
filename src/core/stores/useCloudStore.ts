@@ -172,7 +172,10 @@ export const useCloudStore = create<CloudState>((set, get) => ({
       return success;
     } catch (err) {
       console.error("Restore failed", err);
-      throw new Error(err instanceof Error ? err.message : 'Restore failed.');
+         throw new Error(
+     err instanceof Error ? err.message : 'Restore failed.',
+     { cause: err } 
+   );
     } finally {
       set({ isRestoring: false });
     }
