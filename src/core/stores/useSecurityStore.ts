@@ -26,10 +26,22 @@ export const useSecurityStore = create<SecurityState>()(
         if (!pin) {
           set({ pinHash: null, requireAuthOnLaunch: false });
         } else {
-          set({ pinHash: await hashPin(pin) });
+          const salt = crypto.getRandomValues(new Uint8Array(16));
+          set({ pinHash: `${await hashPin(pin, salt)}:${Array.from(salt, byte => byte.toString(16).padStart(2, '0')).join('')}` });
         }
       },
-      verifyPin: async (pin) => (get().pinHash === await hashPin(pin)),
+      verifyPin: async (pin) => {
+        const stored = get().pinHash;
+        if (!stored) return false;
+        const [storedHash, saltHex] = stored.split(':');
+        if (saltHex) {
+          const salt = new Uint8Array(saltHex.match(/.{1,2}/g)?.map(byte => parseInt(byte, 16)) ?? []);
+          return storedHash === await hashPin(pin, salt);
+        }
+        const legacyDigest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin));
+        const legacyHash = Array.from(new Uint8Array(legacyDigest), byte => byte.toString(16).padStart(2, '0')).join('');
+        return stored === legacyHash;
+      },
       setRequireAuthOnLaunch: (requireAuthOnLaunch) => set({ requireAuthOnLaunch }),
       setAuthenticated: (isAuthenticated) => set({ isAuthenticated }),
       
@@ -52,8 +64,8 @@ export const useSecurityStore = create<SecurityState>()(
   )
 );
 
-const hashPin = async (pin: string): Promise<string> => {
-  const bytes = new TextEncoder().encode(pin);
-  const digest = await crypto.subtle.digest('SHA-256', bytes);
+const hashPin = async (pin: string, salt: Uint8Array): Promise<string> => {
+  const keyMaterial = await crypto.subtle.importKey('raw', new TextEncoder().encode(pin), 'PBKDF2', false, ['deriveBits']);
+  const digest = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' }, keyMaterial, 256);
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, '0')).join('');
 };

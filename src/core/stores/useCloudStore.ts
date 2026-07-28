@@ -158,7 +158,6 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     try {
       const filePath = `${user.id}/${backupName}`;
       
-      // 1. Download from Supabase
       const { data, error } = await supabase.storage
         .from('backups')
         .download(filePath);
@@ -167,19 +166,14 @@ export const useCloudStore = create<CloudState>((set, get) => ({
       
       const encryptedText = await data.text();
       
-      // 2. Decrypt
       const decryptedData = await CryptoService.decrypt(encryptedText, encryptionKey);
-      
-      // 3. Restore to local DB
       const success = await restoreFromData(decryptedData);
       
       return success;
     } catch (err) {
       console.error("Restore failed", err);
-      return false;
+      throw new Error(err instanceof Error ? err.message : 'Restore failed.');
     } finally {
-      set({ isRestoring: true }); // We want to trigger a reload or keep it true until navigation?
-      // wait, we should set it to false so we can re-try if it fails
       set({ isRestoring: false });
     }
   },

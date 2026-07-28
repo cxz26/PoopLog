@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, PoopLog } from '../services/database';
+import { calculateStreaks } from '../utils/analytics';
 
 interface LogState {
   todayPoopLogs: PoopLog[];
@@ -84,41 +85,7 @@ export const useLogStore = create<LogState>((set, get) => ({
   },
 
   calculateStreak: async () => {
-    // Simple streak calculation: count consecutive days backwards from today
-    // We get all unique dates from poopLogs
-    const logs = await db.poopLogs.orderBy('date').reverse().toArray();
-    if (logs.length === 0) {
-      set({ streak: 0 });
-      return;
-    }
-    
-    // Extract unique dates
-    const uniqueDates = Array.from(new Set(logs.map(l => l.date)));
-    
-    let currentStreak = 0;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    let checkDate = new Date(today);
-    
-    // For each day backwards
-    for (const dateStr of uniqueDates) {
-      const logDate = new Date(dateStr);
-      logDate.setHours(0,0,0,0);
-      
-      const diffTime = checkDate.getTime() - logDate.getTime();
-      const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
-      
-      if (diffDays === 0) {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else if (diffDays === 1) {
-         currentStreak++;
-         checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    set({ streak: currentStreak });
+    const logs = await db.poopLogs.toArray();
+    set({ streak: calculateStreaks(logs).current });
   }
 }));

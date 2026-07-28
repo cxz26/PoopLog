@@ -46,14 +46,19 @@ export class CryptoService {
     combined.set(iv, salt.length);
     combined.set(encryptedBytes, salt.length + iv.length);
 
-    // Convert to base64
-    return btoa(String.fromCharCode.apply(null, Array.from(combined)));
+    let binary = '';
+    for (let offset = 0; offset < combined.length; offset += 8192) {
+      binary += String.fromCharCode(...combined.subarray(offset, offset + 8192));
+    }
+    return btoa(binary);
   }
 
   static async decrypt(base64Data: string, password: string): Promise<string> {
-    const combined = new Uint8Array(
-      atob(base64Data).split('').map(c => c.charCodeAt(0))
-    );
+    const binary = atob(base64Data);
+    const combined = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      combined[i] = binary.charCodeAt(i);
+    }
     
     const salt = combined.slice(0, 16);
     const iv = combined.slice(16, 16 + 12);

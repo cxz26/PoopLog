@@ -32,6 +32,8 @@ Run `npm run lint` before a release. The production build is written to `dist/`.
 
 ## Optional cloud backup
 
+**Security warning:** Cloud Backup must use the strict Supabase Storage RLS policies in [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Without those policies, encrypted backups may still be exposed to unauthorized users.
+
 Cloud backup is disabled unless `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are configured in a local `.env` file. Copy `.env.example` and follow [SUPABASE_SETUP.md](SUPABASE_SETUP.md). Never commit `.env` files.
 
 ## Data and privacy

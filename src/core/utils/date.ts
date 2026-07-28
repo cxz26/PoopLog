@@ -10,6 +10,6 @@ export const getCurrentTimeString = () => {
 
 export const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return '';
-  const date = new Date(dateStr);
-  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  return format(parseISO(dateStr), 'EEEE, MMM d');
 };
+import { format, parseISO } from 'date-fns';

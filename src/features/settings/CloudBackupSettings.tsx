@@ -7,7 +7,7 @@ import { CryptoService } from '@/src/core/services/crypto';
 export const CloudBackupSettings: React.FC = () => {
   const cloud = useCloudStore();
   const [showKeyDialog, setShowKeyDialog] = useState(false);
-  const [encryptionKey, setEncryptionKey] = useState(localStorage.getItem('pooplog_encryption_key') || '');
+  const [encryptionKey, setEncryptionKey] = useState('');
   const [newKey, setNewKey] = useState('');
 
   if (!cloud.isConfigured) {
@@ -42,7 +42,6 @@ export const CloudBackupSettings: React.FC = () => {
       setNewKey(generated);
     } else {
       setEncryptionKey(newKey);
-      localStorage.setItem('pooplog_encryption_key', newKey);
       setShowKeyDialog(false);
       setNewKey('');
     }
@@ -64,12 +63,14 @@ export const CloudBackupSettings: React.FC = () => {
       return;
     }
     if (window.confirm(`Restore from ${backupName}? This will replace your local data.`)) {
-      const success = await cloud.restoreBackup(backupName, encryptionKey);
-      if (success) {
-        alert('Data restored successfully!');
-        window.location.reload();
-      } else {
-        alert('Restore failed. Wrong encryption key?');
+      try {
+        const success = await cloud.restoreBackup(backupName, encryptionKey);
+        if (success) {
+          alert('Data restored successfully!');
+          window.location.reload();
+        }
+      } catch (error) {
+        alert(`Restore failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };

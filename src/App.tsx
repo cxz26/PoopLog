@@ -43,7 +43,7 @@ export default function App() {
 
   return (
     <>
-      <RouterProvider router={router} />
+      {!showLockScreen && <RouterProvider router={router} />}
       {showLockScreen && <LockScreen />}
       <PWAUpdater />
     </>

@@ -61,6 +61,11 @@ export class AppDatabase extends Dexie {
     super('PoopLogDatabase');
     
     // Define schema versions
+    this.version(1).stores({
+      dailyLogs: '++id, date',
+      poopLogs: '++id, date, dailyLogId'
+    });
+
     this.version(2).stores({
       dailyLogs: '++id, date',
       poopLogs: '++id, date, dailyLogId'

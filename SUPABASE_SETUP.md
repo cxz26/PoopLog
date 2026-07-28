@@ -23,29 +23,44 @@ PoopLog supports Google and GitHub auth for cloud backup.
 3. Set the bucket to **Private**.
 
 ## 4. Set up Row Level Security (RLS) for Storage
-Your backups contain encrypted data, but you still want strict access control.
+Your backups contain encrypted data, but you still want strict access control. Enable RLS and restrict every object to the authenticated user's first storage path segment (`${user.id}/...`).
 Run the following SQL in the **SQL Editor** in Supabase:
 
 ```sql
--- Allow users to view their own backups
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Each backup must be stored at: <auth.uid()>/<filename>
 CREATE POLICY "Users can view their own backups"
 ON storage.objects FOR SELECT
-USING ( auth.uid() = owner AND bucket_id = 'backups' );
+USING (
+  bucket_id = 'backups'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
--- Allow users to upload their own backups
 CREATE POLICY "Users can upload their own backups"
 ON storage.objects FOR INSERT
-WITH CHECK ( auth.uid() = owner AND bucket_id = 'backups' );
+WITH CHECK (
+  bucket_id = 'backups'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
--- Allow users to update their own backups
 CREATE POLICY "Users can update their own backups"
 ON storage.objects FOR UPDATE
-USING ( auth.uid() = owner AND bucket_id = 'backups' );
+USING (
+  bucket_id = 'backups'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+)
+WITH CHECK (
+  bucket_id = 'backups'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
 
--- Allow users to delete their own backups
 CREATE POLICY "Users can delete their own backups"
 ON storage.objects FOR DELETE
-USING ( auth.uid() = owner AND bucket_id = 'backups' );
+USING (
+  bucket_id = 'backups'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
 ```
 
 Once this is set up, the Cloud Backup settings inside PoopLog will become active automatically!
