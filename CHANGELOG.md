@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1-beta] - 2026-08-01
+### Fixed
+- Fixed RangeError crashes during large cloud backup encryption and decryption.
+- Resolved timezone-safe streak and date display issues.
+- Implemented salted PBKDF2 PIN hashing.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
