@@ -10,6 +10,9 @@ import { SectionCard } from '@/src/shared/components/SectionCard';
 import { CloudBackupSettings } from './CloudBackupSettings';
 import { Button } from '@/src/shared/components/Button';
 
+// 🌟 新增：动态导入 package.json 获取版本号
+import packageJson from '@/package.json';
+
 export const SettingsPage: React.FC = () => {
   const navigate = useNavigate();
   const settings = useSettingsStore();
@@ -232,12 +235,13 @@ export const SettingsPage: React.FC = () => {
         <SettingsItem 
           icon={<Info />} 
           title="Version" 
-          action={<span className="text-text-main/50 font-bold">1.0.0</span>}
+          // 🌟 修改：使用动态读取的 packageJson.version 替换原来的 "1.0.0"
+          action={<span className="text-text-main/50 font-bold">{packageJson.version}</span>}
         />
         <SettingsItem 
           icon={<Github />} 
           title="GitHub Repository" 
-          onClick={() => window.open('https://github.com', '_blank')}
+          onClick={() => window.open('https://github.com/cxz26/PoopLog', '_blank')}
         />
       </SettingsGroup>
 
