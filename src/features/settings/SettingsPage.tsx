@@ -9,8 +9,6 @@ import { Palette, Clock, Calendar, Lock, Shield, Download, FileText, Database, T
 import { SectionCard } from '@/src/shared/components/SectionCard';
 import { CloudBackupSettings } from './CloudBackupSettings';
 import { Button } from '@/src/shared/components/Button';
-
-// 🌟 新增：动态导入 package.json 获取版本号
 import packageJson from '@/package.json';
 
 export const SettingsPage: React.FC = () => {
@@ -49,7 +47,6 @@ export const SettingsPage: React.FC = () => {
         alert("Failed to import backup.");
       }
     }
-    // reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -235,7 +232,6 @@ export const SettingsPage: React.FC = () => {
         <SettingsItem 
           icon={<Info />} 
           title="Version" 
-          // 🌟 修改：使用动态读取的 packageJson.version 替换原来的 "1.0.0"
           action={<span className="text-text-main/50 font-bold">{packageJson.version}</span>}
         />
         <SettingsItem 

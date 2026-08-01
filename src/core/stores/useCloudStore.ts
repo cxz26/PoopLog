@@ -120,13 +120,8 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     
     set({ isBackingUp: true });
     try {
-      // 1. Get local data
       const dataStr = await getBackupData();
-      
-      // 2. Encrypt data
       const encryptedData = await CryptoService.encrypt(dataStr, encryptionKey);
-      
-      // 3. Upload to Supabase Storage
       const filename = `backup_${new Date().getTime()}.enc`;
       const filePath = `${user.id}/${filename}`;
       

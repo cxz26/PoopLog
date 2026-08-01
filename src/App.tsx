@@ -18,7 +18,6 @@ export default function App() {
   const { pinHash, requireAuthOnLaunch, isAuthenticated, lockApp } = useSecurityStore();
 
   useEffect(() => {
-    // Initialize required services on app start
     db.initialize().catch(console.error);
     useCloudStore.getState().initialize().catch(console.error);
     

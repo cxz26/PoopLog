@@ -53,8 +53,6 @@ export const HistoryPage: React.FC = () => {
     if (symptoms.length > 0) {
       result = result.filter(log => log.symptoms?.some(s => symptoms.includes(s)));
     }
-    
-      // Sort
       result = [...result].sort((a, b) => {
         const dateA = new Date(`${a.date}T${a.time || '00:00'}`).getTime();
         const dateB = new Date(`${b.date}T${b.time || '00:00'}`).getTime();

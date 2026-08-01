@@ -31,8 +31,6 @@ export const StatisticsPage: React.FC = () => {
   useEffect(() => {
     loadStatsData();
   }, [loadStatsData]);
-
-  // Derived Stats
   const { filteredLogs, daysCount, streaks } = useMemo(() => {
     const filtered = filterLogsByTime(allPoopLogs, timeFilter);
     let d = timeFilter === 'all' ? 1 : getTimeFilterDayCount(timeFilter);
@@ -66,8 +64,6 @@ export const StatisticsPage: React.FC = () => {
       mostCommonTime: calculateMostCommonTime(filteredLogs),
     };
   }, [filteredLogs, bmLogs, daysCount]);
-
-  // Chart Data
   const weeklyFreqData = useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const counts = [0, 0, 0, 0, 0, 0, 0];
@@ -150,8 +146,6 @@ export const StatisticsPage: React.FC = () => {
       sleep: sSum / count
     }));
   }, [filteredLogs, preferredWaterUnit]);
-
-  // Heatmap Data
   const heatmapDays = useMemo(() => {
     const end = new Date();
     const start = subDays(end, Math.max(daysCount - 1, 6)); 

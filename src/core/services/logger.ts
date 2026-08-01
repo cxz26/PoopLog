@@ -1,4 +1,3 @@
-// A reusable logger service
 
 export const Logger = {
   info: (message: string, ...optionalParams: any[]) => {

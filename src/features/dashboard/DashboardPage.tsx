@@ -33,13 +33,9 @@ export const DashboardPage: React.FC = () => {
   const handleLogYes = () => {
     navigate(APP_CONSTANTS.ROUTES.LOG_NEW);
   };
-
-  // Dashboard Stats
   const dashboardStats = useMemo(() => {
     const bowelMovements = historyPoopLogs.filter(l => l.hasBowelMovement !== false);
     const thisWeekLogs = bowelMovements.filter(l => isThisWeek(parseISO(l.date)));
-    
-    // avg freq: total logs / total days since first log
     let avgFreq = 0;
     if (bowelMovements.length > 0) {
       const firstLogDate = parseISO(bowelMovements[bowelMovements.length - 1].date);

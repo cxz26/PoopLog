@@ -1,4 +1,3 @@
-// Simple Web Crypto API wrapper for encrypting and decrypting backups
 export class CryptoService {
   private static async deriveKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
     const enc = new TextEncoder();

@@ -5,8 +5,6 @@ import { format } from 'date-fns';
 
 export const exportToCSV = async () => {
   const poopLogs = await db.poopLogs.toArray();
-  
-  // Convert poop logs array fields to strings
   const formattedLogs = poopLogs.map(log => ({
     ...log,
     symptoms: log.symptoms?.join(', ') || '',
@@ -48,8 +46,6 @@ export const exportToPDF = async () => {
   doc.setFontSize(12);
   doc.text(`Generated on: ${format(new Date(), 'PPP')}`, 14, 32);
   doc.text(`Total Logs: ${poopLogs.length}`, 14, 40);
-  
-  // Basic list of last 20 logs for PDF
   const recent = [...poopLogs].reverse().slice(0, 20);
   let y = 50;
   
@@ -84,8 +80,6 @@ export const importFromJSON = async (file: File): Promise<boolean> => {
         if (!backup.data || !Array.isArray(backup.data.poopLogs) || !backup.data.poopLogs.every(isValidLog)) {
           throw new Error('Invalid backup file');
         }
-
-        // Wipe and restore
         await db.transaction('rw', db.poopLogs, db.dailyLogs, db.customTags, async () => {
           await db.poopLogs.clear();
           await db.dailyLogs.clear();
@@ -136,8 +130,6 @@ export const restoreFromData = async (jsonString: string): Promise<boolean> => {
     if (!backup.data || !Array.isArray(backup.data.poopLogs) || !backup.data.poopLogs.every(isValidLog)) {
       throw new Error('Invalid backup data format');
     }
-
-    // Wipe and restore
     await db.transaction('rw', db.poopLogs, db.dailyLogs, db.customTags, async () => {
       await db.poopLogs.clear();
       await db.dailyLogs.clear();

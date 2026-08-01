@@ -30,7 +30,6 @@ export const useCustomTagsStore = create<CustomTagsState>((set, get) => ({
   addTag: async (category, name) => {
     if (!name.trim()) return;
     try {
-      // Check if exists
       const existing = await db.customTags.where({ category, name: name.trim() }).first();
       if (existing) return;
 
@@ -69,19 +68,11 @@ export const useCustomTagsStore = create<CustomTagsState>((set, get) => ({
   mergeTags: async (keepId, mergeIds) => {
     try {
       await db.transaction('rw', db.customTags, async () => {
-        // Find keep tag
         const keepTag = await db.customTags.get(keepId);
         if (!keepTag) return;
         
-        // Find all logs using merge tags and update them
-        // Note: For a robust system, we should update poopLogs that have the old tag name to the new tag name.
-        // For simplicity, we just delete the old tags. The prompt didn't explicitly ask for historical migration of tags, 
-        // but merging implies they become one. 
-        
         const tagsToMerge = await db.customTags.where('id').anyOf(mergeIds).toArray();
         const oldNames = tagsToMerge.map(t => t.name);
-        
-        // Let's migrate poopLogs (this might be slow if there are many logs, but typically not)
         if (oldNames.length > 0) {
           const logs = await db.poopLogs.toArray();
           for (const log of logs) {
@@ -103,7 +94,6 @@ export const useCustomTagsStore = create<CustomTagsState>((set, get) => ({
             }
 
             if (changed && log.id) {
-               // Remove duplicates after mapping
                if (updatedLog.symptoms) updatedLog.symptoms = [...new Set(updatedLog.symptoms)];
                if (updatedLog.foods) updatedLog.foods = [...new Set(updatedLog.foods)];
                if (updatedLog.medications) updatedLog.medications = [...new Set(updatedLog.medications)];

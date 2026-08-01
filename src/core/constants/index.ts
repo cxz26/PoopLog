@@ -1,12 +1,8 @@
 export const APP_CONSTANTS = {
   DB_NAME: 'PoopLogDatabase',
   ANIMATION_DURATION_MS: 300,
-  
-  // Storage Keys
   STORAGE_THEME_KEY: 'app_theme',
   STORAGE_FIRST_LAUNCH: 'first_launch',
-  
-  // Routes
   ROUTES: {
     HOME: '/',
     DASHBOARD: '/dashboard',

@@ -70,13 +70,9 @@ export const NewLogFlow: React.FC = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const totalSteps = 11;
-
-  // View States
   const [timeMode, setTimeMode] = useState<'exact' | 'approx'>('approx');
   const [showAdvancedSleep, setShowAdvancedSleep] = useState(false);
   const [showAdvancedWater, setShowAdvancedWater] = useState(false);
-
-  // Form State
   const [formData, setFormData] = useState<Partial<PoopLog>>({
     date: getTodayDateString(),
     time: getCurrentTimeString(),
@@ -124,8 +120,6 @@ export const NewLogFlow: React.FC = () => {
     }
     
     const dataToSave = { ...formData } as any;
-    
-    // Normalize water to mL before saving
     if (dataToSave.waterType === 'exact' && dataToSave.waterDetailed) {
       if (dataToSave.waterUnit === 'mL') dataToSave.waterML = dataToSave.waterDetailed;
       else if (dataToSave.waterUnit === 'L') dataToSave.waterML = dataToSave.waterDetailed * 1000;

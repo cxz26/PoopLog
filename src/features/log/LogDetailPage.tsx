@@ -40,7 +40,6 @@ export const LogDetailPage: React.FC = () => {
       navigate(-1);
     } catch (e) {
       console.error(e);
-      // If we had a toast system we'd show it here
     }
   };
 

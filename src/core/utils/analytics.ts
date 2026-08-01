@@ -15,9 +15,6 @@ export const getTimeFilterDayCount = (filter: Exclude<TimeFilter, 'all'>): numbe
 
 export const filterLogsByTime = (logs: PoopLog[], filter: TimeFilter): PoopLog[] => {
   if (filter === 'all') return logs;
-
-  // Log dates are calendar dates. Comparing them with the current time drops
-  // boundary-day records, so use an inclusive calendar-day range instead.
   const today = startOfDay(new Date());
   const cutoff = format(subDays(today, getTimeFilterDayCount(filter) - 1), 'yyyy-MM-dd');
   const end = format(today, 'yyyy-MM-dd');
