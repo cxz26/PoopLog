@@ -69,7 +69,6 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     });
   },
 
-  // 🌟 新增：Email 登录
   signInWithEmail: async (email: string, password: string) => {
     if (!get().isConfigured) return { success: false, error: 'Not configured' };
     try {
@@ -81,7 +80,6 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     }
   },
 
-  // 🌟 新增：Email 注册
   signUpWithEmail: async (email: string, password: string) => {
     if (!get().isConfigured) return { success: false, error: 'Not configured' };
     try {
