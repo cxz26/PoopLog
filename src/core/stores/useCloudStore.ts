@@ -22,6 +22,7 @@ interface CloudState {
   
   initialize: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signUpWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
@@ -63,6 +64,16 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     if (!get().isConfigured) return;
     await supabase.auth.signInWithOAuth({
       provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/settings',
+      }
+    });
+  },
+
+  signInWithFacebook: async () => {
+    if (!get().isConfigured) return;
+    await supabase.auth.signInWithOAuth({
+      provider: 'facebook',
       options: {
         redirectTo: window.location.origin + '/settings',
       }

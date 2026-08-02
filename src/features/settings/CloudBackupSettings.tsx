@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCloudStore } from '@/src/core/stores/useCloudStore';
 import { SettingsGroup, SettingsItem } from '@/src/shared/components/SettingsUI';
-import { Cloud, CloudOff, RefreshCw, Key, Trash2, DownloadCloud, Mail, Chrome } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, Key, Trash2, DownloadCloud, Mail, Chrome, Facebook } from 'lucide-react';
 import { CryptoService } from '@/src/core/services/crypto';
 import { Button } from '@/src/shared/components/Button';
 
@@ -83,6 +83,14 @@ export const CloudBackupSettings: React.FC = () => {
             >
               <Chrome size={18} />
               Sign in with Google
+            </button>
+
+            <button 
+              onClick={cloud.signInWithFacebook}
+              className="w-full bg-blue-50 text-blue-600 border border-blue-100 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+            >
+              <Facebook size={18} />
+              Sign in with Facebook
             </button>
           </div>
         ) : (
