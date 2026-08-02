@@ -5,10 +5,10 @@ import { getBackupData, restoreFromData } from '../utils/export';
 import { User, Session } from '@supabase/supabase-js';
 
 export interface BackupMetadata {
-  name: string; // filename
+  name: string;
   created_at: string;
   size: number;
-  id: string; // id or full path
+  id: string;
 }
 
 interface CloudState {
@@ -22,7 +22,8 @@ interface CloudState {
   
   initialize: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInWithGithub: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signUpWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   loadBackups: () => Promise<void>;
   createBackup: (encryptionKey: string) => Promise<boolean>;
@@ -68,14 +69,34 @@ export const useCloudStore = create<CloudState>((set, get) => ({
     });
   },
 
-  signInWithGithub: async () => {
-    if (!get().isConfigured) return;
-    await supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: window.location.origin + '/settings',
-      }
-    });
+  // 🌟 新增：Email 登录
+  signInWithEmail: async (email: string, password: string) => {
+    if (!get().isConfigured) return { success: false, error: 'Not configured' };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
+  },
+
+  // 🌟 新增：Email 注册
+  signUpWithEmail: async (email: string, password: string) => {
+    if (!get().isConfigured) return { success: false, error: 'Not configured' };
+    try {
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: window.location.origin + '/settings'
+        }
+      });
+      if (error) throw error;
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message };
+    }
   },
 
   signOut: async () => {
@@ -160,17 +181,13 @@ export const useCloudStore = create<CloudState>((set, get) => ({
       if (error) throw error;
       
       const encryptedText = await data.text();
-      
       const decryptedData = await CryptoService.decrypt(encryptedText, encryptionKey);
       const success = await restoreFromData(decryptedData);
       
       return success;
     } catch (err) {
       console.error("Restore failed", err);
-         throw new Error(
-     err instanceof Error ? err.message : 'Restore failed.',
-     { cause: err } 
-   );
+      throw new Error(err instanceof Error ? err.message : 'Restore failed.', { cause: err });
     } finally {
       set({ isRestoring: false });
     }
