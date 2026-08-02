@@ -10,8 +10,6 @@ export const CloudBackupSettings: React.FC = () => {
   const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [encryptionKey, setEncryptionKey] = useState('');
   const [newKey, setNewKey] = useState('');
-
-  // 🌟 新增：Email 登录相关状态
   const [showEmailAuth, setShowEmailAuth] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
