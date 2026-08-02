@@ -16,7 +16,7 @@ const Sidebar = () => (
   <nav className="hidden md:flex flex-col w-64 bg-surface border-r border-border-main p-6 shrink-0 h-screen sticky top-0">
     <div className="mb-12 px-4">
       <h1 className="text-3xl font-black text-text-main tracking-tight m-0 leading-none">PoopLog</h1>
-      <p className="text-sm text-primary/80 mt-1 font-medium">Your offline-first tracker</p>
+      <p className="text-sm text-primary/80 mt-1 font-medium">Your privacy-first tracker</p>
     </div>
     <div className="flex flex-col gap-2">
       {NavTabs.map((tab) => (

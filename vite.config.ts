@@ -14,7 +14,7 @@ export default defineConfig(() => {
         manifest: {
           name: 'PoopLog',
           short_name: 'PoopLog',
-          description: 'Your offline-first bowel movement tracker.',
+          description: 'Your privacy-first bowel movement tracker.',
           theme_color: '#8E7D6B',
           background_color: '#f8f5f1',
           display: 'standalone',

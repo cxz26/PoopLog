@@ -1,10 +1,10 @@
 # PoopLog
 
-Your offline-first bowel movement tracker. Private, fast, and easy to use.
+Your privacy-first bowel movement tracker. Private, fast, and easy to use.
 
 ## Features
 
-- **Offline First**: All data is stored locally in your browser using IndexedDB.
+- **Privacy First**: All data is stored locally in your browser using IndexedDB.
 - **Privacy Focused**: No tracking, no accounts, no server data collection.
 - **Quick Logging**: Log your movements in seconds with an intuitive UI.
 - **Bristol Scale**: Track consistency using the Bristol Stool Scale.

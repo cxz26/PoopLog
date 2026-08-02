@@ -81,7 +81,7 @@ export const SettingsPage: React.FC = () => {
       <SectionCard className="mb-6 bg-primary/5 border-primary/20 p-6 flex items-center justify-between">
         <div>
            <h2 className="text-xl font-bold text-text-main mb-1">PoopLog</h2>
-           <p className="text-text-main/60 text-sm">Your offline-first bowel movement tracker.</p>
+           <p className="text-text-main/60 text-sm">Your privacy-first bowel movement tracker.</p>
         </div>
         <div className="bg-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">
           💩
