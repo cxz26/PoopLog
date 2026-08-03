@@ -23,8 +23,6 @@ interface CloudState {
   initialize: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithFacebook: () => Promise<void>;
-  signInWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signUpWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   loadBackups: () => Promise<void>;
   createBackup: (encryptionKey: string) => Promise<boolean>;
@@ -78,34 +76,6 @@ export const useCloudStore = create<CloudState>((set, get) => ({
         redirectTo: window.location.origin + '/settings',
       }
     });
-  },
-
-  signInWithEmail: async (email: string, password: string) => {
-    if (!get().isConfigured) return { success: false, error: 'Not configured' };
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
-  },
-
-  signUpWithEmail: async (email: string, password: string) => {
-    if (!get().isConfigured) return { success: false, error: 'Not configured' };
-    try {
-      const { error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          emailRedirectTo: window.location.origin + '/settings'
-        }
-      });
-      if (error) throw error;
-      return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
-    }
   },
 
   signOut: async () => {

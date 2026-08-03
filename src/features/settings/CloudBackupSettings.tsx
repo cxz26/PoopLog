@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useCloudStore } from '@/src/core/stores/useCloudStore';
 import { SettingsGroup, SettingsItem } from '@/src/shared/components/SettingsUI';
-import { Cloud, CloudOff, RefreshCw, Key, Trash2, DownloadCloud, Mail, Chrome, Facebook } from 'lucide-react';
+import { Cloud, CloudOff, RefreshCw, Key, Trash2, DownloadCloud, Chrome, Facebook } from 'lucide-react';
 import { CryptoService } from '@/src/core/services/crypto';
 import { Button } from '@/src/shared/components/Button';
 
@@ -10,45 +10,6 @@ export const CloudBackupSettings: React.FC = () => {
   const [showKeyDialog, setShowKeyDialog] = useState(false);
   const [encryptionKey, setEncryptionKey] = useState('');
   const [newKey, setNewKey] = useState('');
-  const [showEmailAuth, setShowEmailAuth] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [authLoading, setAuthLoading] = useState(false);
-  const [authError, setAuthError] = useState('');
-
-  const handleEmailAuth = async () => {
-    if (!email || !password) {
-      setAuthError('Please enter both email and password.');
-      return;
-    }
-    setAuthLoading(true);
-    setAuthError('');
-
-    try {
-      let result;
-      if (authMode === 'login') {
-        result = await cloud.signInWithEmail(email, password);
-      } else {
-        result = await cloud.signUpWithEmail(email, password);
-      }
-
-      if (result.success) {
-        setShowEmailAuth(false);
-        setEmail('');
-        setPassword('');
-        if (authMode === 'signup') {
-          alert('Account created! Please check your email to verify your account before logging in.');
-        }
-      } else {
-        setAuthError(result.error || 'Authentication failed.');
-      }
-    } catch {
-      setAuthError('An unexpected error occurred.');
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   if (!cloud.isConfigured) {
     return (
@@ -65,74 +26,25 @@ export const CloudBackupSettings: React.FC = () => {
   if (!cloud.user) {
     return (
       <SettingsGroup title="Cloud Backup (Optional)">
-        {!showEmailAuth ? (
-          <div className="p-4 bg-surface/50 border-t border-border-main flex flex-col gap-3">
-            <p className="text-sm text-text-main mb-2 font-medium">Sign in to enable cloud backup. Keep your data safe online.</p>
-            
-            <button 
-              onClick={() => setShowEmailAuth(true)}
-              className="w-full bg-primary/10 text-primary border border-primary/20 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
-            >
-              <Mail size={18} />
-              Sign in with Email
-            </button>
+        <div className="p-4 bg-surface/50 border-t border-border-main flex flex-col gap-3">
+          <p className="text-sm text-text-main mb-2 font-medium">Sign in to enable cloud backup. Keep your data safe online.</p>
+          
+          <button 
+            onClick={cloud.signInWithGoogle}
+            className="w-full bg-red-50 text-red-600 border border-red-100 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
+          >
+            <Chrome size={18} />
+            Sign in with Google
+          </button>
 
-            <button 
-              onClick={cloud.signInWithGoogle}
-              className="w-full bg-red-50 text-red-600 border border-red-100 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-red-100 transition-colors"
-            >
-              <Chrome size={18} />
-              Sign in with Google
-            </button>
-
-            <button 
-              onClick={cloud.signInWithFacebook}
-              className="w-full bg-blue-50 text-blue-600 border border-blue-100 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
-            >
-              <Facebook size={18} />
-              Sign in with Facebook
-            </button>
-          </div>
-        ) : (
-          <div className="p-4 bg-surface/50 border-t border-border-main flex flex-col gap-3">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-bold text-text-main">{authMode === 'login' ? 'Sign In' : 'Sign Up'}</h4>
-              <button onClick={() => { setShowEmailAuth(false); setAuthError(''); }} className="text-text-main/50 text-xs hover:text-text-main">Cancel</button>
-            </div>
-            
-            <input 
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="Email address"
-              className="w-full bg-background border border-border-main rounded-xl px-3 py-2 text-sm text-text-main outline-none focus:border-primary"
-            />
-            <input 
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="Password (min 6 chars)"
-              className="w-full bg-background border border-border-main rounded-xl px-3 py-2 text-sm text-text-main outline-none focus:border-primary"
-            />
-            
-            {authError && <p className="text-xs text-danger">{authError}</p>}
-
-            <Button 
-              onClick={handleEmailAuth} 
-              disabled={authLoading}
-              className="w-full"
-            >
-              {authLoading ? 'Processing...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
-            </Button>
-
-            <button 
-              onClick={() => { setAuthMode(authMode === 'login' ? 'signup' : 'login'); setAuthError(''); }}
-              className="text-xs text-primary hover:underline text-center"
-            >
-              {authMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}
-            </button>
-          </div>
-        )}
+          <button 
+            onClick={cloud.signInWithFacebook}
+            className="w-full bg-blue-50 text-blue-600 border border-blue-100 px-4 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+          >
+            <Facebook size={18} />
+            Sign in with Facebook
+          </button>
+        </div>
       </SettingsGroup>
     );
   }
