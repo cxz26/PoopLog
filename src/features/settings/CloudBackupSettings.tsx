@@ -3,7 +3,6 @@ import { useCloudStore } from '@/src/core/stores/useCloudStore';
 import { SettingsGroup, SettingsItem } from '@/src/shared/components/SettingsUI';
 import { Cloud, CloudOff, RefreshCw, Key, Trash2, DownloadCloud, Chrome, Facebook } from 'lucide-react';
 import { CryptoService } from '@/src/core/services/crypto';
-import { Button } from '@/src/shared/components/Button';
 
 export const CloudBackupSettings: React.FC = () => {
   const cloud = useCloudStore();
