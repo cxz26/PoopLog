@@ -59,22 +59,20 @@ export class AppDatabase extends Dexie {
 
   constructor() {
     super('PoopLogDatabase');
+
     this.version(1).stores({
       dailyLogs: '++id, date',
       poopLogs: '++id, date, dailyLogId'
     });
 
-    this.version(2).stores({
-      dailyLogs: '++id, date',
-      poopLogs: '++id, date, dailyLogId'
-    });
-    
     this.version(3).stores({
+      dailyLogs: '++id, date',
+      poopLogs: '++id, date, dailyLogId',
       customTags: '++id, category, name'
     });
 
     this.version(4).stores({
-      dailyLogs: '++id, &date',
+      dailyLogs: '++id, &date', 
       poopLogs: '++id, date, dailyLogId',
       customTags: '++id, category, name'
     });
