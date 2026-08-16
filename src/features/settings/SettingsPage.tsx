@@ -5,7 +5,8 @@ import { useSettingsStore } from '@/src/core/stores/useSettingsStore';
 import { useSecurityStore } from '@/src/core/stores/useSecurityStore';
 import { exportToCSV, exportToJSON, exportToPDF, importFromJSON } from '@/src/core/utils/export';
 import { db } from '@/src/core/services/database';
-import { Palette, Clock, Calendar, Lock, Shield, Download, FileText, Database, Trash2, Info, Github, Droplet, Tag } from 'lucide-react';
+import { Palette, Clock, Calendar, Lock, Shield, Download, FileText, Database, Trash2, Info, Droplet, Tag } from 'lucide-react';
+// import { Github } from 'lucide-react'; // Temporarily hidden; restore when GitHub Repository is enabled.
 import { SectionCard } from '@/src/shared/components/SectionCard';
 import { CloudBackupSettings } from './CloudBackupSettings';
 import { Button } from '@/src/shared/components/Button';
@@ -80,8 +81,8 @@ export const SettingsPage: React.FC = () => {
     <div className="flex flex-col pt-2 min-h-0 w-full max-w-2xl mx-auto pb-12 overflow-y-auto relative">
       <SectionCard className="mb-6 bg-primary/5 border-primary/20 p-6 flex items-center justify-between">
         <div>
-           <h2 className="text-xl font-bold text-text-main mb-1">PoopLog</h2>
-           <p className="text-text-main/60 text-sm">Your privacy-first bowel movement tracker.</p>
+          <h2 className="text-xl font-bold text-text-main mb-1">PoopLog</h2>
+          <p className="text-text-main/60 text-sm">Your privacy-first bowel movement tracker.</p>
         </div>
         <div className="bg-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-xl shadow-lg">
           💩
@@ -234,23 +235,41 @@ export const SettingsPage: React.FC = () => {
           title="Version" 
           action={<span className="text-text-main/50 font-bold">{packageJson.version}</span>}
         />
+
+        {/*
         <SettingsItem 
           icon={<Github />} 
           title="GitHub Repository" 
-          onClick={() => window.open('https://github.com/cxz26/PoopLog', '_blank')}
+          onClick={() => window.open('https://github.com/cxz26/PoopLog', '_blank')} 
         />
+        */}
       </SettingsGroup>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)}>
-          <div className="bg-background rounded-[24px] p-6 w-full max-w-sm shadow-2xl border border-border-main" onClick={e => e.stopPropagation()}>
+        <div 
+          className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm" 
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div 
+            className="bg-background rounded-[24px] p-6 w-full max-w-sm shadow-2xl border border-border-main" 
+            onClick={e => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold mb-2">Delete all records?</h3>
-            <p className="text-text-main/60 mb-6">This will permanently delete ALL your logs. This action cannot be undone.</p>
+            <p className="text-text-main/60 mb-6">
+              This will permanently delete ALL your logs. This action cannot be undone.
+            </p>
             <div className="flex gap-3">
-              <Button variant="outlined" className="flex-1" onClick={() => setShowDeleteConfirm(false)}>
+              <Button 
+                variant="outlined" 
+                className="flex-1" 
+                onClick={() => setShowDeleteConfirm(false)}
+              >
                 Cancel
               </Button>
-              <Button className="flex-1 bg-error text-white border-error" onClick={handleDeleteAll}>
+              <Button 
+                className="flex-1 bg-error text-white border-error" 
+                onClick={handleDeleteAll}
+              >
                 Delete All
               </Button>
             </div>
