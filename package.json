@@ -1,0 +1,37 @@
+{
+  "name": "pooplog",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:desktop": "tauri dev",
+    "build": "tsc -b && vite build",
+    "build:desktop": "tauri build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "verify:schema": "node scripts/verify-schema.mjs",
+    "verify:phase2": "VITE_VERIFY_PHASE2=1 tauri dev"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-sql": "^2.3.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "autoprefixer": "^10.5.4",
+    "esbuild": "^0.28.2",
+    "oxlint": "^1.75.0",
+    "postcss": "^8.5.26",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}

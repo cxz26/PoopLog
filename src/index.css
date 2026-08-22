@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  border-color: theme("colors.zinc.200");
+}
+
+body {
+  @apply bg-zinc-50 text-zinc-900 antialiased;
+  font-family: ui-sans-system, system-ui, -apple-system, sans-serif;
+}
