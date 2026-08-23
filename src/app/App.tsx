@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useAppStore } from "../core/stores/appStore";
 import { Dashboard } from "../features/dashboard/Dashboard";
 import { HistoryPage } from "../features/history/HistoryPage";
+import { StatisticsPage } from "../features/statistics/StatisticsPage";
 import { QaPage } from "../qa/QaPage";
 
 export function App() {
   const { databaseStatus, databaseError } = useAppStore();
-  const [view, setView] = useState<"dashboard" | "history">("dashboard");
+  const [view, setView] = useState<"dashboard" | "history" | "statistics">("dashboard");
 
   if (databaseStatus === "initializing" || databaseStatus === "idle") {
     return (
@@ -44,13 +45,13 @@ export function App() {
       <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="mx-auto flex max-w-[880px] items-center gap-2 px-4 py-2 sm:px-6">
           <span className="text-sm font-bold text-zinc-900">PoopLog</span>
-          <div className="ml-auto flex gap-1" role="tablist" aria-label="Main navigation">
+          <div className="ml-auto flex gap-1 overflow-x-auto" role="tablist" aria-label="Main navigation">
             <button
               role="tab"
               aria-selected={view === "dashboard"}
               aria-controls="dashboard-panel"
               onClick={() => setView("dashboard")}
-              className={`min-h-[36px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 ${
+              className={`min-h-[44px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 shrink-0 ${
                 view === "dashboard" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
               }`}
             >
@@ -61,11 +62,22 @@ export function App() {
               aria-selected={view === "history"}
               aria-controls="history-panel"
               onClick={() => setView("history")}
-              className={`min-h-[36px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 ${
+              className={`min-h-[44px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 shrink-0 ${
                 view === "history" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
               }`}
             >
               History
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "statistics"}
+              aria-controls="statistics-panel"
+              onClick={() => setView("statistics")}
+              className={`min-h-[44px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 shrink-0 ${
+                view === "statistics" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              Statistics
             </button>
           </div>
         </div>
@@ -75,6 +87,9 @@ export function App() {
       </div>
       <div id="history-panel" role="tabpanel" hidden={view !== "history"} aria-labelledby="history-tab">
         {view === "history" && <HistoryPage onBack={() => setView("dashboard")} />}
+      </div>
+      <div id="statistics-panel" role="tabpanel" hidden={view !== "statistics"} aria-labelledby="statistics-tab">
+        {view === "statistics" && <StatisticsPage onBack={() => setView("dashboard")} />}
       </div>
     </div>
   );

@@ -14,6 +14,13 @@ import { Card } from "../shared/components/Card";
 import { currentTimeInputValue } from "../core/utils/date";
 import { HistoryDayCard } from "../features/history/components/HistoryDayCard";
 import { HistoryEmptyState } from "../features/history/components/HistoryEmptyState";
+import { TimeRangeFilter } from "../features/statistics/components/TimeRangeFilter";
+import { OverviewCards } from "../features/statistics/components/OverviewCards";
+import { BowelFrequencyChart } from "../features/statistics/components/BowelFrequencyChart";
+import { BristolChart } from "../features/statistics/components/BristolChart";
+import { TagFrequencyList } from "../features/statistics/components/TagFrequencyList";
+import { SleepWaterCards } from "../features/statistics/components/SleepWaterCards";
+import { ActivityCalendar } from "../features/statistics/components/ActivityCalendar";
 
 // Mock data for visual QA — no DB required
 const MOCK_WEEK_DATES = [
@@ -40,6 +47,7 @@ export function QaPage() {
   const [showHistoryDetail, setShowHistoryDetail] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
+  const [timeRange, setTimeRange] = useState<"7" | "30" | "90" | "365" | "all">("7");
   const [bristol, setBristol] = useState<number | null>(4);
   const [amount, setAmount] = useState<string | null>("medium");
   const [difficulty, setDifficulty] = useState<string | null>("normal");
@@ -271,6 +279,55 @@ export function QaPage() {
             onConfirm={() => setShowDeleteConfirm(false)}
             onCancel={() => setShowDeleteConfirm(false)}
           />
+        </section>
+
+        {/* 9. Statistics */}
+        <section data-testid="qa-statistics">
+          <h2 className="mb-2 text-sm font-semibold">9. Statistics — overview + charts + calendar</h2>
+          <div className="space-y-4">
+            <TimeRangeFilter value={timeRange} onChange={setTimeRange as any} />
+            <OverviewCards
+              stats={{
+                totalBowelMovements: 12,
+                daysWithBM: 8,
+                daysWithoutBM: 3,
+                daysNotRecorded: 2,
+                avgPerLoggedDay: 1.1,
+                currentStreak: 5,
+                longestStreak: 12,
+                totalLoggedDays: 11,
+              }}
+            />
+            <BowelFrequencyChart
+              data={[
+                { date: "2026-08-16", count: 1, status: "bm" },
+                { date: "2026-08-17", count: 0, status: "no_bm" },
+                { date: "2026-08-18", count: null, status: "no_record" },
+                { date: "2026-08-19", count: 2, status: "bm" },
+                { date: "2026-08-20", count: 1, status: "bm" },
+                { date: "2026-08-21", count: 0, status: "no_bm" },
+                { date: "2026-08-22", count: 1, status: "bm" },
+              ]}
+            />
+            <BristolChart data={{ counts: [{ type: 1, count: 1, percentage: 10 }, { type: 2, count: 2, percentage: 20 }, { type: 3, count: 3, percentage: 30 }, { type: 4, count: 4, percentage: 40 }, { type: 5, count: 0, percentage: 0 }, { type: 6, count: 0, percentage: 0 }, { type: 7, count: 0, percentage: 0 }], average: 3.5, total: 10 }} />
+            <div className="grid gap-3 sm:grid-cols-1 lg:grid-cols-3">
+              <TagFrequencyList title="Symptoms" data={[{ tag: { id: 1, category: "symptom", name: "Bloating", is_builtin: 1, created_at: "", updated_at: "" }, count: 5 }, { tag: { id: 2, category: "symptom", name: "Gas", is_builtin: 1, created_at: "", updated_at: "" }, count: 3 }]} />
+              <TagFrequencyList title="Foods" data={[{ tag: { id: 3, category: "food", name: "Coffee", is_builtin: 1, created_at: "", updated_at: "" }, count: 4 }]} />
+              <TagFrequencyList title="Exercise" data={[]} emptyText="No exercise recorded." />
+            </div>
+            <SleepWaterCards sleep={{ averageMinutes: 405, qualityCounts: [{ quality: "good", count: 3, percentage: 60 }, { quality: "average", count: 2, percentage: 40 }], total: 5 }} water={{ averageMl: 1200, total: 5 }} />
+            <ActivityCalendar
+              data={[
+                { date: "2026-08-16", status: "bm", count: 1 },
+                { date: "2026-08-17", status: "no_bm", count: 0 },
+                { date: "2026-08-18", status: "no_record", count: null },
+                { date: "2026-08-19", status: "bm", count: 2 },
+                { date: "2026-08-20", status: "bm", count: 1 },
+                { date: "2026-08-21", status: "no_bm", count: 0 },
+                { date: "2026-08-22", status: "bm", count: 1 },
+              ]}
+            />
+          </div>
         </section>
 
         <p className="text-center text-xs text-zinc-400">QA page — no DB, pure layout. Check horizontal overflow, clipping, touch targets ≥44px.</p>
