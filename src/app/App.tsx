@@ -6,6 +6,7 @@ import { Dashboard } from "../features/dashboard/Dashboard";
 import { HistoryPage } from "../features/history/HistoryPage";
 import { StatisticsPage } from "../features/statistics/StatisticsPage";
 import { SecuritySettings } from "../features/settings/SecuritySettings";
+import { BackupPage } from "../features/backup/BackupPage";
 import { LockScreen } from "../features/security/LockScreen";
 import { PinSetup } from "../features/security/PinSetup";
 import { QaPage } from "../qa/QaPage";
@@ -86,6 +87,7 @@ export function App() {
     if (qa === "1") return <QaPage />;
     if (qa === "lock") return <LockScreen onUnlock={() => {}} />;
     if (qa === "pinsetup") return <PinSetup onComplete={() => {}} onSkip={() => {}} />;
+    if (qa === "backup") return <div className="min-h-screen bg-zinc-50 px-4 py-6"><div className="mx-auto max-w-[880px]"><BackupPage /></div></div>;
   }
 
   // Security gates — must be after DB ready but before protected content
@@ -179,12 +181,15 @@ export function App() {
       </div>
       <div id="settings-panel" role="tabpanel" hidden={view !== "settings"} aria-labelledby="settings-tab">
         {view === "settings" && (
-          <div className="mx-auto max-w-[880px] px-4 py-6 sm:px-6">
+          <div className="mx-auto max-w-[880px] px-4 py-6 sm:px-6 space-y-8">
             <SecuritySettings
               onLockNow={() => {
                 setStatus("locked");
               }}
             />
+            <div className="border-t border-zinc-200 pt-8">
+              <BackupPage />
+            </div>
           </div>
         )}
       </div>

@@ -351,6 +351,28 @@ export function QaPage() {
           </div>
         </section>
 
+        {/* 11. Backup & Restore */}
+        <section data-testid="qa-backup">
+          <h2 className="mb-2 text-sm font-semibold">11. Backup & Restore</h2>
+          <div className="rounded-xl border border-zinc-200 bg-white p-2">
+            <p className="mb-2 text-xs font-semibold text-zinc-500">BackupPage preview (isolated)</p>
+            <div className="max-h-[800px] overflow-auto rounded-lg border border-zinc-100 p-2">
+              <div className="space-y-4">
+                <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <h3 className="text-sm font-semibold">Create Backup</h3>
+                  <p className="text-xs text-zinc-600">Backup Password + strength + confirm</p>
+                  <div className="mt-2 h-20 rounded bg-zinc-50 flex items-center justify-center text-xs text-zinc-500">BackupPasswordInput preview</div>
+                </div>
+                <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                  <h3 className="text-sm font-semibold">Restore Backup</h3>
+                  <p className="text-xs text-zinc-600">Select .plog + preview card</p>
+                  <div className="mt-2 h-20 rounded bg-zinc-50 flex items-center justify-center text-xs text-zinc-500">BackupPreviewCard preview</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <p className="text-center text-xs text-zinc-400">QA page — no DB, pure layout. Check horizontal overflow, clipping, touch targets ≥44px.</p>
       </div>
     </div>
