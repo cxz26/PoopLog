@@ -14,7 +14,7 @@ export type TagCategory = "symptom" | "food" | "medication" | "exercise";
 export type SleepQuality = "poor" | "average" | "good" | "excellent";
 export type MenstrualFlow = "light" | "medium" | "heavy" | "spotting";
 export type Amount = "small" | "medium" | "large";
-export type Difficulty = "easy" | "normal" | "strained" | "very_strained";
+export type Difficulty = "very_easy" | "easy" | "normal" | "strained" | "very_strained";
 
 // ---------------------------------------------------------------------------
 // Daily Check-in

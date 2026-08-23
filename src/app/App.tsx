@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useAppStore } from "../core/stores/appStore";
 import { Dashboard } from "../features/dashboard/Dashboard";
+import { HistoryPage } from "../features/history/HistoryPage";
 import { QaPage } from "../qa/QaPage";
 
 export function App() {
   const { databaseStatus, databaseError } = useAppStore();
+  const [view, setView] = useState<"dashboard" | "history">("dashboard");
 
   if (databaseStatus === "initializing" || databaseStatus === "idle") {
     return (
@@ -36,7 +39,45 @@ export function App() {
     return <QaPage />;
   }
 
-  return <Dashboard />;
+  return (
+    <div>
+      <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto flex max-w-[880px] items-center gap-2 px-4 py-2 sm:px-6">
+          <span className="text-sm font-bold text-zinc-900">PoopLog</span>
+          <div className="ml-auto flex gap-1" role="tablist" aria-label="Main navigation">
+            <button
+              role="tab"
+              aria-selected={view === "dashboard"}
+              aria-controls="dashboard-panel"
+              onClick={() => setView("dashboard")}
+              className={`min-h-[36px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 ${
+                view === "dashboard" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              Today
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "history"}
+              aria-controls="history-panel"
+              onClick={() => setView("history")}
+              className={`min-h-[36px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 ${
+                view === "history" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              History
+            </button>
+          </div>
+        </div>
+      </nav>
+      <div id="dashboard-panel" role="tabpanel" hidden={view !== "dashboard"} aria-labelledby="dashboard-tab">
+        {view === "dashboard" && <Dashboard />}
+      </div>
+      <div id="history-panel" role="tabpanel" hidden={view !== "history"} aria-labelledby="history-tab">
+        {view === "history" && <HistoryPage onBack={() => setView("dashboard")} />}
+      </div>
+    </div>
+  );
 }
 
 export default App;

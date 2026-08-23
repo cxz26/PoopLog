@@ -1,6 +1,6 @@
-// Maps UI labels to DB values (difficulty CHECK allows easy/normal/strained/very_strained)
+// Difficulty values stored as distinct DB values (migration v3 adds very_easy)
 const OPTIONS: { label: string; dbValue: string | null }[] = [
-  { label: "Very Easy", dbValue: "easy" },
+  { label: "Very Easy", dbValue: "very_easy" },
   { label: "Easy", dbValue: "easy" },
   { label: "Normal", dbValue: "normal" },
   { label: "Difficult", dbValue: "strained" },
@@ -17,7 +17,6 @@ export function DifficultySelector({ value, onChange }: Props) {
   return (
     <div role="radiogroup" aria-label="Difficulty" className="flex flex-wrap gap-2">
       {OPTIONS.map((o) => {
-        // Very Easy and Easy share DB value 'easy'; highlight both when easy — acceptable without schema change.
         const isSelected = value === o.dbValue;
         return (
           <button

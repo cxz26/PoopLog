@@ -8,9 +8,12 @@ import { AmountSelector } from "../features/log/components/AmountSelector";
 import { DifficultySelector } from "../features/log/components/DifficultySelector";
 import { TimeSelector } from "../features/log/components/TimeSelector";
 import { Modal } from "../shared/components/Modal";
+import { ConfirmDialog } from "../shared/components/ConfirmDialog";
 import { Button } from "../shared/components/Button";
 import { Card } from "../shared/components/Card";
 import { currentTimeInputValue } from "../core/utils/date";
+import { HistoryDayCard } from "../features/history/components/HistoryDayCard";
+import { HistoryEmptyState } from "../features/history/components/HistoryEmptyState";
 
 // Mock data for visual QA — no DB required
 const MOCK_WEEK_DATES = [
@@ -34,6 +37,8 @@ const MOCK_WEEK_MAP: Record<string, boolean> = {
 
 export function QaPage() {
   const [showModal, setShowModal] = useState(false);
+  const [showHistoryDetail, setShowHistoryDetail] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
   const [bristol, setBristol] = useState<number | null>(4);
   const [amount, setAmount] = useState<string | null>("medium");
@@ -195,6 +200,77 @@ export function QaPage() {
               )}
             </div>
           </Modal>
+        </section>
+
+        {/* 8. History */}
+        <section data-testid="qa-history">
+          <h2 className="mb-2 text-sm font-semibold">8. History — day cards (newest first)</h2>
+          <div className="space-y-3">
+            <HistoryDayCard
+              checkin={{ id: 101, date: "2026-08-22", completed: 1, has_bowel_movement: 1, recorded_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() }}
+              records={[
+                { id: 1, daily_checkin_id: 101, occurred_at: new Date().toISOString(), time_type: "exact", approximate_time_label: null, bristol_type: 4, amount: "medium", difficulty: "normal", pain_level: 1, color: null, notes: "Note example", created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any,
+                { id: 2, daily_checkin_id: 101, occurred_at: null, time_type: "approximate", approximate_time_label: "Afternoon", bristol_type: 3, amount: "small", difficulty: "very_easy" as any, pain_level: null, color: null, notes: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as any,
+              ]}
+              onRecordClick={() => setShowHistoryDetail(true)}
+            />
+            <HistoryDayCard
+              checkin={{ id: 102, date: "2026-08-21", completed: 1, has_bowel_movement: 0, recorded_at: new Date().toISOString(), created_at: new Date().toISOString(), updated_at: new Date().toISOString() }}
+              records={[]}
+              onRecordClick={() => {}}
+            />
+          </div>
+          <div className="mt-4">
+            <HistoryEmptyState />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => setShowHistoryDetail(true)}>Open Detail Modal</Button>
+            <Button variant="secondary" onClick={() => setShowDeleteConfirm(true)}>
+              Open Delete Confirm
+            </Button>
+          </div>
+          <Modal open={showHistoryDetail} onClose={() => setShowHistoryDetail(false)} title="Bowel record detail">
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-xl bg-zinc-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-zinc-500">Time</p>
+                  <p className="mt-1 font-medium">08:15 · Type 4</p>
+                </div>
+                <div className="rounded-xl bg-zinc-50 p-3">
+                  <p className="text-xs font-semibold uppercase text-zinc-500">Bristol</p>
+                  <p className="mt-1 font-medium">Type 4 — Sausage, smooth</p>
+                </div>
+              </div>
+              <Card>
+                <p className="text-xs font-semibold uppercase">Pain</p>
+                <p className="text-sm">2 / 10</p>
+              </Card>
+              <Card>
+                <p className="text-xs font-semibold uppercase">Tags</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <span className="rounded-full bg-zinc-100 border px-2.5 py-1 text-xs">Bloating (symptom)</span>
+                  <span className="rounded-full bg-zinc-100 border px-2.5 py-1 text-xs">Coffee (food)</span>
+                </div>
+              </Card>
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1">
+                  Edit
+                </Button>
+                <Button variant="danger" className="flex-1" onClick={() => setShowDeleteConfirm(true)}>
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </Modal>
+          <ConfirmDialog
+            open={showDeleteConfirm}
+            title="Delete this bowel record?"
+            message="This action cannot be undone."
+            confirmLabel="Delete"
+            cancelLabel="Cancel"
+            onConfirm={() => setShowDeleteConfirm(false)}
+            onCancel={() => setShowDeleteConfirm(false)}
+          />
         </section>
 
         <p className="text-center text-xs text-zinc-400">QA page — no DB, pure layout. Check horizontal overflow, clipping, touch targets ≥44px.</p>

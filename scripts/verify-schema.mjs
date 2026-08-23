@@ -31,7 +31,7 @@ function mustMatch(regex, label) {
   return true;
 }
 
-console.log("=== Phase 2 Schema Static Verification ===");
+console.log("=== Phase 4 Schema Static Verification (v1+v2+v3) ===");
 console.log(`Source: ${migrationsPath}\n`);
 
 let ok = true;
@@ -52,6 +52,7 @@ ok = mustMatch(/bowel_records[\s\S]*daily_checkin_id INTEGER NOT NULL REFERENCES
 ok = mustMatch(/bristol_type INTEGER CHECK \(bristol_type IS NULL OR bristol_type BETWEEN 1 AND 7\)/, "bristol 1-7") && ok;
 ok = mustMatch(/pain_level INTEGER CHECK \(pain_level IS NULL OR pain_level BETWEEN 0 AND 10\)/, "pain_level 0-10") && ok;
 ok = mustMatch(/time_type TEXT NOT NULL CHECK \(time_type IN \('exact', 'approximate'\)\)/, "time_type") && ok;
+ok = mustMatch(/difficulty TEXT CHECK \(difficulty IS NULL OR difficulty IN \('very_easy','easy','normal','strained','very_strained'\)\)/, "difficulty very_easy…very_strained (v3)") && ok;
 ok = mustContain("'Early Morning'", "approximate_time_label Early Morning") && ok;
 ok = mustContain("'Late Night'", "approximate_time_label Late Night") && ok;
 ok = mustMatch(/UNIQUE\(category, name\)/, "tags UNIQUE(category,name)") && ok;
@@ -73,6 +74,11 @@ ok = mustContain("idx_bowel_record_tags_tag", "index bowel_record_tags.tag_id") 
 // migrations
 ok = mustMatch(/version:\s*1,\s*\n\s*name:\s*"001_init/, "migration v1 preserved") && ok;
 ok = mustMatch(/version:\s*2,\s*\n\s*name:\s*"002_pooplog_core_schema"/, "migration v2") && ok;
+ok = mustMatch(/version:\s*3,\s*\n\s*name:\s*"003_difficulty_very_easy_and_complete_tags"/, "migration v3 (difficulty + tags)") && ok;
+ok = mustContain("very_easy", "difficulty very_easy (v3)") && ok;
+ok = mustContain("'Blood'", "seed Blood (v3)") && ok;
+ok = mustContain("'Milk'", "seed Milk (v3)") && ok;
+ok = mustContain("'Gym'", "seed Gym (v3)") && ok;
 ok = mustContain("INSERT OR IGNORE INTO tags", "seed builtin tags") && ok;
 
 console.log("\n=== Result ===");

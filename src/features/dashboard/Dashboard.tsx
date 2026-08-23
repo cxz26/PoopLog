@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "../../shared/components/Button";
 import { Card } from "../../shared/components/Card";
 import { Modal } from "../../shared/components/Modal";
+import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
 import { CheckinPrompt } from "./components/CheckinPrompt";
 import { StreakBadge } from "./components/StreakBadge";
 import { WeeklySummary } from "./components/WeeklySummary";
@@ -21,6 +22,7 @@ export function Dashboard() {
 
   const [showLogModal, setShowLogModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showChangeConfirm, setShowChangeConfirm] = useState(false);
 
   const load = useCallback(async () => {
     if (databaseStatus !== "ready") return;
@@ -64,7 +66,7 @@ export function Dashboard() {
       await DailyCheckinRepo.markCompleted(t, 0);
       await load();
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setActionLoading(false);
     }
@@ -80,7 +82,7 @@ export function Dashboard() {
       // open log modal after ensuring dailyCheckin exists
       setShowLogModal(true);
     } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : String(e));
     } finally {
       setActionLoading(false);
     }
@@ -92,15 +94,8 @@ export function Dashboard() {
     if (isCurrentlyYes) {
       // YES -> NO : need confirmation if records exist
       if (bowelRecords.length > 0) {
-        const ok = window.confirm(
-          `You have ${bowelRecords.length} bowel record(s) for today. Changing to "No bowel movement" will delete these records. Continue?`,
-        );
-        if (!ok) return;
-        // delete bowel records via cascade is handled by removing dailyCheckin and recreating? Instead we update checkin and delete records
-        // Simplest: delete all bowel records for this checkin then mark NO
-        for (const br of bowelRecords) {
-          await BowelRecordRepo.remove(br.id);
-        }
+        setShowChangeConfirm(true);
+        return;
       }
       await DailyCheckinRepo.markCompleted(today, 0);
       await load();
@@ -110,6 +105,16 @@ export function Dashboard() {
       await load();
       setShowLogModal(true);
     }
+  };
+
+  const confirmChangeToNo = async () => {
+    setShowChangeConfirm(false);
+    // delete all bowel records for this checkin then mark NO
+    for (const br of bowelRecords) {
+      await BowelRecordRepo.remove(br.id);
+    }
+    await DailyCheckinRepo.markCompleted(today, 0);
+    await load();
   };
 
   const handleAddAnother = () => {
@@ -227,6 +232,16 @@ export function Dashboard() {
           />
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={showChangeConfirm}
+        title="Change to no bowel movement?"
+        message={`You have ${bowelRecords.length} bowel record(s) for today. Changing to "No bowel movement" will delete these records. This cannot be undone.`}
+        confirmLabel="Delete records"
+        cancelLabel="Cancel"
+        onConfirm={confirmChangeToNo}
+        onCancel={() => setShowChangeConfirm(false)}
+      />
     </div>
   );
 }

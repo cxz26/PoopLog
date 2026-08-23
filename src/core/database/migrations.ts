@@ -169,6 +169,65 @@ export const migrations: Migration[] = [
         ('exercise','Yoga',1);
     `,
   },
+  {
+    version: 3,
+    name: "003_difficulty_very_easy_and_complete_tags",
+    sql: `
+      -- Difficulty: allow very_easy (preserve existing 'easy' rows)
+      PRAGMA foreign_keys=off;
+
+      CREATE TABLE IF NOT EXISTS bowel_records_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        daily_checkin_id INTEGER NOT NULL REFERENCES daily_checkins(id) ON DELETE CASCADE,
+        occurred_at TEXT,
+        time_type TEXT NOT NULL CHECK (time_type IN ('exact', 'approximate')),
+        approximate_time_label TEXT CHECK (
+          approximate_time_label IS NULL OR approximate_time_label IN (
+            'Early Morning','Morning','Late Morning','Afternoon','Evening','Night','Late Night'
+          )
+        ),
+        bristol_type INTEGER CHECK (bristol_type IS NULL OR bristol_type BETWEEN 1 AND 7),
+        amount TEXT CHECK (amount IS NULL OR amount IN ('small','medium','large')),
+        difficulty TEXT CHECK (difficulty IS NULL OR difficulty IN ('very_easy','easy','normal','strained','very_strained')),
+        pain_level INTEGER CHECK (pain_level IS NULL OR pain_level BETWEEN 0 AND 10),
+        color TEXT,
+        notes TEXT,
+        created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+        updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      );
+
+      INSERT OR IGNORE INTO bowel_records_new (id, daily_checkin_id, occurred_at, time_type, approximate_time_label, bristol_type, amount, difficulty, pain_level, color, notes, created_at, updated_at)
+        SELECT id, daily_checkin_id, occurred_at, time_type, approximate_time_label, bristol_type, amount, difficulty, pain_level, color, notes, created_at, updated_at FROM bowel_records;
+
+      DROP TABLE IF EXISTS bowel_records;
+      ALTER TABLE bowel_records_new RENAME TO bowel_records;
+
+      CREATE INDEX IF NOT EXISTS idx_bowel_records_daily_checkin_id ON bowel_records(daily_checkin_id);
+      CREATE INDEX IF NOT EXISTS idx_bowel_records_occurred_at ON bowel_records(occurred_at);
+
+      PRAGMA foreign_keys=on;
+
+      -- Complete built-in tags (idempotent)
+      INSERT OR IGNORE INTO tags (category, name, is_builtin) VALUES
+        ('symptom','Blood',1),
+        ('symptom','Mucus',1),
+        ('symptom','Incomplete Evacuation',1),
+        ('food','Spicy Food',1),
+        ('food','Coffee',1),
+        ('food','Milk',1),
+        ('food','BBQ',1),
+        ('food','Fast Food',1),
+        ('food','Seafood',1),
+        ('food','High Fiber',1),
+        ('food','Oily Food',1),
+        ('medication','Antibiotics',1),
+        ('medication','Painkillers',1),
+        ('exercise','Gym',1),
+        ('exercise','Basketball',1),
+        ('exercise','Cycling',1),
+        ('exercise','Swimming',1);
+    `,
+  },
 ];
 
 /** Generate SQL to record a migration as applied. */
