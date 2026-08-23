@@ -21,6 +21,8 @@ import { BristolChart } from "../features/statistics/components/BristolChart";
 import { TagFrequencyList } from "../features/statistics/components/TagFrequencyList";
 import { SleepWaterCards } from "../features/statistics/components/SleepWaterCards";
 import { ActivityCalendar } from "../features/statistics/components/ActivityCalendar";
+import { PinSetup } from "../features/security/PinSetup";
+import { LockScreen } from "../features/security/LockScreen";
 
 // Mock data for visual QA — no DB required
 const MOCK_WEEK_DATES = [
@@ -327,6 +329,25 @@ export function QaPage() {
                 { date: "2026-08-22", status: "bm", count: 1 },
               ]}
             />
+          </div>
+        </section>
+
+        {/* 10. Security — PIN Setup & Lock Screen */}
+        <section data-testid="qa-security">
+          <h2 className="mb-2 text-sm font-semibold">10. Security — PIN Setup & Lock Screen</h2>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-zinc-200 bg-white p-2">
+              <p className="mb-2 text-xs font-semibold text-zinc-500">PinSetup preview (isolated)</p>
+              <div className="max-h-[500px] overflow-auto rounded-lg border border-zinc-100">
+                <PinSetup onComplete={() => {}} onSkip={() => {}} />
+              </div>
+            </div>
+            <div className="rounded-xl border border-zinc-200 bg-white p-2">
+              <p className="mb-2 text-xs font-semibold text-zinc-500">LockScreen preview (isolated)</p>
+              <div className="max-h-[600px] overflow-auto rounded-lg border border-zinc-100">
+                <LockScreen onUnlock={() => {}} />
+              </div>
+            </div>
           </div>
         </section>
 

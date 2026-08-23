@@ -1,13 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAppStore } from "../core/stores/appStore";
+import { useSecurityStore } from "../core/security/securityStore";
+import { hasPin, isPinSetupDone, markPinSetupDone, getRemainingCooldown, isInCooldown, getFailedCount } from "../core/security/pinService";
 import { Dashboard } from "../features/dashboard/Dashboard";
 import { HistoryPage } from "../features/history/HistoryPage";
 import { StatisticsPage } from "../features/statistics/StatisticsPage";
+import { SecuritySettings } from "../features/settings/SecuritySettings";
+import { LockScreen } from "../features/security/LockScreen";
+import { PinSetup } from "../features/security/PinSetup";
 import { QaPage } from "../qa/QaPage";
 
 export function App() {
   const { databaseStatus, databaseError } = useAppStore();
-  const [view, setView] = useState<"dashboard" | "history" | "statistics">("dashboard");
+  const { status, setStatus, setHasPin, setFailedCount, setCooldownRemaining } = useSecurityStore();
+  const [view, setView] = useState<"dashboard" | "history" | "statistics" | "settings">("dashboard");
+
+  // Initialize security state after DB ready
+  useEffect(() => {
+    if (databaseStatus !== "ready") return;
+    const has = hasPin();
+    setHasPin(has);
+    if (!has) {
+      if (isPinSetupDone()) {
+        setStatus("unlocked");
+      } else {
+        setStatus("unconfigured");
+      }
+    } else {
+      const remaining = getRemainingCooldown();
+      if (remaining > 0) {
+        setStatus("cooling_down");
+        setCooldownRemaining(remaining);
+      } else {
+        setStatus("locked");
+      }
+      setFailedCount(getFailedCount());
+    }
+  }, [databaseStatus, setHasPin, setStatus, setFailedCount, setCooldownRemaining]);
+
+  // Cooldown ticker for lock screen
+  useEffect(() => {
+    if (status !== "cooling_down" && status !== "locked") return;
+    const id = setInterval(() => {
+      const rem = getRemainingCooldown();
+      setCooldownRemaining(rem);
+      if (rem === 0 && isInCooldown()) {
+        // still in cooldown but remaining 0 means just expired, update status
+      }
+      if (rem === 0 && status === "cooling_down") {
+        setStatus("locked");
+      }
+    }, 1000);
+    return () => clearInterval(id);
+  }, [status, setCooldownRemaining, setStatus]);
 
   if (databaseStatus === "initializing" || databaseStatus === "idle") {
     return (
@@ -36,10 +81,40 @@ export function App() {
   }
 
   // QA harness — dev-only, no DB required, for responsive verification
-  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("qa") === "1") {
-    return <QaPage />;
+  if (typeof window !== "undefined") {
+    const qa = new URLSearchParams(window.location.search).get("qa");
+    if (qa === "1") return <QaPage />;
+    if (qa === "lock") return <LockScreen onUnlock={() => {}} />;
+    if (qa === "pinsetup") return <PinSetup onComplete={() => {}} onSkip={() => {}} />;
   }
 
+  // Security gates — must be after DB ready but before protected content
+  if (status === "unconfigured") {
+    return (
+      <PinSetup
+        onComplete={() => {
+          setHasPin(true);
+          setStatus("unlocked");
+        }}
+        onSkip={() => {
+          markPinSetupDone();
+          setStatus("unlocked");
+        }}
+      />
+    );
+  }
+
+  if (status === "locked" || status === "cooling_down" || status === "authenticating") {
+    return (
+      <LockScreen
+        onUnlock={() => {
+          setStatus("unlocked");
+        }}
+      />
+    );
+  }
+
+  // Only unlocked reaches protected content
   return (
     <div>
       <nav className="sticky top-0 z-40 border-b border-zinc-200 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -79,6 +154,17 @@ export function App() {
             >
               Statistics
             </button>
+            <button
+              role="tab"
+              aria-selected={view === "settings"}
+              aria-controls="settings-panel"
+              onClick={() => setView("settings")}
+              className={`min-h-[44px] rounded-full px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 shrink-0 ${
+                view === "settings" ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              Settings
+            </button>
           </div>
         </div>
       </nav>
@@ -90,6 +176,17 @@ export function App() {
       </div>
       <div id="statistics-panel" role="tabpanel" hidden={view !== "statistics"} aria-labelledby="statistics-tab">
         {view === "statistics" && <StatisticsPage onBack={() => setView("dashboard")} />}
+      </div>
+      <div id="settings-panel" role="tabpanel" hidden={view !== "settings"} aria-labelledby="settings-tab">
+        {view === "settings" && (
+          <div className="mx-auto max-w-[880px] px-4 py-6 sm:px-6">
+            <SecuritySettings
+              onLockNow={() => {
+                setStatus("locked");
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
