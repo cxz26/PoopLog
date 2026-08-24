@@ -35,18 +35,19 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     boot();
     installDevReset();
 
-    // Phase 2 verification harness — runs only when VITE_VERIFY_PHASE2=1 inside Tauri
-    // Isolated, no UI, logs to console. Call window.__POOPLOG_VERIFY_PHASE2() manually in DEV too.
-    if (import.meta.env.VITE_VERIFY_PHASE2 === "1" && tauri) {
-      import("../../core/database/verifyPhase2").then((m) => {
-        // small delay to let DB init complete
-        setTimeout(() => {
-          m.runPhase2Verification().catch((e) => console.error("[verify] auto-run failed", e));
-        }, 800);
-      });
-    } else {
-      // Always install verify hook for manual DEV invocation
-      import("../../core/database/verifyPhase2").catch(() => {});
+    // Phase 2 verification harness — dev-only, not bundled in production
+    if (import.meta.env.DEV) {
+      if (import.meta.env.VITE_VERIFY_PHASE2 === "1" && tauri) {
+        import(/* @vite-ignore */ "../../core/database/verifyPhase2").then((m) => {
+          // small delay to let DB init complete
+          setTimeout(() => {
+            m.runPhase2Verification().catch((e) => console.error("[verify] auto-run failed", e));
+          }, 800);
+        });
+      } else {
+        // Always install verify hook for manual DEV invocation (dev-only)
+        import(/* @vite-ignore */ "../../core/database/verifyPhase2").catch(() => {});
+      }
     }
 
     return () => {

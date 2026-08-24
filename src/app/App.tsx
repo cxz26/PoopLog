@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import { useAppStore } from "../core/stores/appStore";
 import { useSecurityStore } from "../core/security/securityStore";
 import { hasPin, isPinSetupDone, markPinSetupDone, getRemainingCooldown, isInCooldown, getFailedCount } from "../core/security/pinService";
@@ -9,7 +9,6 @@ import { SecuritySettings } from "../features/settings/SecuritySettings";
 import { BackupPage } from "../features/backup/BackupPage";
 import { LockScreen } from "../features/security/LockScreen";
 import { PinSetup } from "../features/security/PinSetup";
-import { QaPage } from "../qa/QaPage";
 
 export function App() {
   const { databaseStatus, databaseError } = useAppStore();
@@ -82,9 +81,18 @@ export function App() {
   }
 
   // QA harness — dev-only, no DB required, for responsive verification
-  if (typeof window !== "undefined") {
+  // Vite will tree-shake this entire block in production (import.meta.env.DEV === false)
+  if (import.meta.env.DEV && typeof window !== "undefined") {
     const qa = new URLSearchParams(window.location.search).get("qa");
-    if (qa === "1") return <QaPage />;
+    if (qa === "1") {
+      // Lazy load QaPage only in DEV — not bundled in production (vite-ignore prevents pre-bundling)
+      const QaPageLazy = lazy(() => import(/* @vite-ignore */ "../qa/QaPage").then((m) => ({ default: m.QaPage })));
+      return (
+        <Suspense fallback={<div className="p-6 text-center text-sm text-zinc-600">Loading QA…</div>}>
+          <QaPageLazy />
+        </Suspense>
+      );
+    }
     if (qa === "lock") return <LockScreen onUnlock={() => {}} />;
     if (qa === "pinsetup") return <PinSetup onComplete={() => {}} onSkip={() => {}} />;
     if (qa === "backup") return <div className="min-h-screen bg-zinc-50 px-4 py-6"><div className="mx-auto max-w-[880px]"><BackupPage /></div></div>;
