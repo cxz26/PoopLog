@@ -46,8 +46,6 @@
   "plugins": {
     "sql": {
       "preload": []
-    },
-    "dialog": {},
-    "fs": {}
+    }
   }
 }
