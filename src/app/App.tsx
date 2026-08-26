@@ -10,6 +10,11 @@ import { BackupPage } from "../features/backup/BackupPage";
 import { LockScreen } from "../features/security/LockScreen";
 import { PinSetup } from "../features/security/PinSetup";
 
+// Dev-only QA harness — lazy loaded once at module level to avoid re-mount on each render
+const QaPageLazy = import.meta.env.DEV
+  ? lazy(() => import(/* @vite-ignore */ "../qa/QaPage").then((m) => ({ default: m.QaPage })))
+  : (null as unknown as React.LazyExoticComponent<React.ComponentType>);
+
 export function App() {
   const { databaseStatus, databaseError } = useAppStore();
   const { status, setStatus, setHasPin, setFailedCount, setCooldownRemaining } = useSecurityStore();
@@ -85,8 +90,6 @@ export function App() {
   if (import.meta.env.DEV && typeof window !== "undefined") {
     const qa = new URLSearchParams(window.location.search).get("qa");
     if (qa === "1") {
-      // Lazy load QaPage only in DEV — not bundled in production (vite-ignore prevents pre-bundling)
-      const QaPageLazy = lazy(() => import(/* @vite-ignore */ "../qa/QaPage").then((m) => ({ default: m.QaPage })));
       return (
         <Suspense fallback={<div className="p-6 text-center text-sm text-zinc-600">Loading QA…</div>}>
           <QaPageLazy />
