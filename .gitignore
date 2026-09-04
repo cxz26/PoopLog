@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Local data & secrets (safety net — never commit)
+.env
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+*.plog
+
 # Tauri
 src-tauri/target
 src-tauri/gen

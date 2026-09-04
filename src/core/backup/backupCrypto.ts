@@ -58,9 +58,10 @@ export function validateHeader(header: BackupHeaderWithoutPayload): void {
   if (!header || typeof header !== "object") throw new Error("Invalid backup header");
   if (header.magic !== BACKUP_MAGIC) throw new Error("Invalid backup magic");
   if (header.formatVersion !== BACKUP_FORMAT_VERSION) throw new Error("Unsupported backup format version");
+  if (!header.encryption || typeof header.encryption !== "object") throw new Error("Invalid backup header");
   if (header.encryption.algorithm !== "AES-256-GCM") throw new Error("Unsupported encryption algorithm");
   if (header.encryption.kdf !== "PBKDF2-SHA-256") throw new Error("Unsupported KDF");
-  const it = header.encryption.kdfParams.iterations;
+  const it = header.encryption.kdfParams?.iterations;
   if (typeof it !== "number" || it < 100_000 || it > 1_000_000) throw new Error("Unsupported KDF iterations");
   // salt 16B
   try {
@@ -158,6 +159,7 @@ export async function encryptWithHeader(plaintext: string, password: string, hea
 
 export async function decryptPayload(backupFile: BackupFile, password: string): Promise<string> {
   validatePassword(password);
+  if (!backupFile || typeof backupFile !== "object") throw new Error("Invalid backup header");
   // Reconstruct header without payload
   const header: BackupHeaderWithoutPayload = {
     magic: backupFile.magic,
@@ -172,7 +174,13 @@ export async function decryptPayload(backupFile: BackupFile, password: string): 
   const key = await deriveKey(password, header.encryption.salt, header.encryption.kdfParams.iterations);
   const aad = canonicalizeHeader(header);
   const nonceBytes = base64ToBuf(header.encryption.nonce);
-  const ciphertextBytes = base64ToBuf(backupFile.payload);
+  let ciphertextBytes: Uint8Array;
+  try {
+    ciphertextBytes = base64ToBuf(backupFile.payload);
+  } catch {
+    // Malformed/truncated payload encoding must not leak raw atob errors
+    throw new Error("Wrong password or corrupted backup.");
+  }
 
   const subtle = getCrypto();
   try {

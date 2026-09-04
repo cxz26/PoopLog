@@ -87,6 +87,21 @@ export function BowelLogForm({ dateISO, dailyCheckinId, onClose, onSaved }: Prop
       const occurredAt = timeType === "exact" ? timeInputToISO(dateISO, exactTime) : null;
       const tagIds = [...selectedSymptoms, ...selectedFoods, ...selectedMeds, ...selectedExercises];
 
+      // Validate optional values before creating the bowel record. Otherwise a
+      // malformed sleep value would leave a valid bowel record behind after
+      // the later optional write fails.
+      let sleepTotal: number | null = null;
+      if (sleepHours || sleepMins) {
+        const h = Number(sleepHours || "0");
+        const m = Number(sleepMins || "0");
+        if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 24 || m < 0 || m > 59) {
+          throw new Error("Sleep must be 0–1440 minutes");
+        }
+        const total = h * 60 + m;
+        if (total > 24 * 60) throw new Error("Sleep must be 0–1440 minutes");
+        if (total > 0) sleepTotal = total;
+      }
+
       // Create bowel record (transactional with tags)
       await BowelRecordRepo.createWithTags(
         {
@@ -104,15 +119,7 @@ export function BowelLogForm({ dateISO, dailyCheckinId, onClose, onSaved }: Prop
       );
 
       // Optional sleep/water — per daily_checkin
-      if (sleepHours || sleepMins) {
-        const h = parseInt(sleepHours || "0", 10);
-        const m = parseInt(sleepMins || "0", 10);
-        const total = (Number.isNaN(h) ? 0 : h) * 60 + (Number.isNaN(m) ? 0 : m);
-        if (total > 0) {
-          if (total < 0 || total > 24 * 60) throw new Error("Sleep must be 0–1440 minutes");
-          await DailyCheckinRepo.setSleep(dailyCheckinId, total, null);
-        }
-      }
+      if (sleepTotal !== null) await DailyCheckinRepo.setSleep(dailyCheckinId, sleepTotal, null);
       if (waterMl) {
         const ml = parseInt(waterMl, 10);
         if (!Number.isNaN(ml) && ml >= 0) {

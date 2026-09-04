@@ -7,11 +7,7 @@
 import { encryptPayload } from "./backupCrypto";
 import { createBackupPayload, serializeBackupPayload } from "./backupService";
 import type { BackupFile } from "./backupTypes";
-
-// Platform detection: Tauri vs Node (for tests)
-function isTauri(): boolean {
-  return typeof window !== "undefined" && "__TAURI__" in window;
-}
+import { isTauri } from "../utils/platform";
 
 async function getSafetyDir(): Promise<string> {
   if (isTauri()) {

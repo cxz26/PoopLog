@@ -379,6 +379,34 @@ console.log("\n--- Full encryptPayload flow ---");
   assert(decrypted === plaintextFull, "full flow decrypt ok");
 }
 
+console.log("\n--- Corruption robustness (no raw internal errors) ---");
+{
+  const good = await encryptPayload(JSON.stringify({ t: 1 }), password, {
+    createdAt: new Date().toISOString(),
+    appVersion: "0.1.0",
+    schemaVersion: 3,
+    encryption: { algorithm: "AES-256-GCM", kdf: "PBKDF2-SHA-256", kdfParams: { iterations: BACKUP_KDF_ITERATIONS } },
+  });
+  // Raw browser/node errors (atob DOMException, TypeError) must never escape —
+  // only the generic crypto error or a clean header validation error.
+  const CLEAN = /^(Wrong password or corrupted backup\.|Invalid backup|Unsupported |Invalid salt|Invalid nonce)/;
+  const cases = [
+    ["malformed base64 payload", { ...good, payload: "%%%" }],
+    ["payload missing", { ...good, payload: undefined }],
+    ["kdfParams missing", { ...good, encryption: { ...good.encryption, kdfParams: undefined } }],
+    ["encryption missing", { ...good, encryption: undefined }],
+    ["null backup file", null],
+  ];
+  for (const [name, file] of cases) {
+    try {
+      await decryptPayload(file, password);
+      assert(false, `${name}: rejected`);
+    } catch (e) {
+      assert(CLEAN.test(e.message), `${name}: clean error ("${String(e.message).slice(0, 60)}")`);
+    }
+  }
+}
+
 console.log(`\n=== Result: ${passed} passed, ${failed} failed ===`);
 if (failed > 0) {
   console.error("FAILED");

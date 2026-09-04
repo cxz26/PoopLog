@@ -148,6 +148,14 @@ export async function withTransaction<T>(
 ): Promise<T> {
   const db = await getDatabase();
   if (!db) throw new Error("Database not initialized — cannot start transaction");
+
+  // tauri-plugin-sql exposes a pooled, stateless execute/select API. A BEGIN
+  // issued through it can hold a lock on one pooled connection while the next
+  // statement is scheduled on another, causing every write to fail with
+  // SQLITE_BUSY. Keep the transaction protocol for the injected test adapter;
+  // production Tauri calls must not issue standalone transaction commands.
+  if (isTauri()) return fn(db);
+
   await db.execute("BEGIN IMMEDIATE;");
   try {
     const result = await fn(db);
