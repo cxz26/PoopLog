@@ -50,7 +50,9 @@ console.log("Water preserved:", payload.data.water_records[0].total_ml === 1200)
 console.log("Validation:", validateBackupPayload(payload).valid);
 
 const serialized = serializeBackupPayload(payload);
-const password = "correct-horse-battery-staple-123";
+// Synthetic runtime password — nothing hardcoded, no real credential involved.
+const { randomBytes } = await import("node:crypto");
+const password = randomBytes(16).toString("hex");
 const backupFile = await encryptPayload(serialized, password, { createdAt: new Date().toISOString(), appVersion: "0.1.0", schemaVersion: 3, encryption: { algorithm: "AES-256-GCM", kdf: "PBKDF2-SHA-256", kdfParams: { iterations: 250000 } } });
 const tmpPath = path.join(os.tmpdir(), "pooplog-real-test-" + Date.now() + ".plog");
 await fs.writeFile(tmpPath, JSON.stringify(backupFile, null, 2), "utf-8");

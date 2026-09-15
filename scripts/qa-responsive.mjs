@@ -2,6 +2,9 @@
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const VIEWPORTS = [
   { w: 320, h: 800, name: "320px" },
@@ -65,7 +68,7 @@ async function main() {
       await page.waitForTimeout(1500); // allow DB mock and render
 
       // Take screenshot for manual inspection (saved to temp)
-      const screenshotPath = `C:\\Users\\PC\\AppData\\Local\\Temp\\opencode\\qa-${vp.w}.png`;
+      const screenshotPath = join(tmpdir(), `qa-${vp.w}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`  Screenshot: ${screenshotPath}`);
 
@@ -237,7 +240,9 @@ async function main() {
   console.log("\n=== Tauri app launch check ===");
   try {
     const { spawn: spawn2 } = await import("node:child_process");
-    const exe = "C:\\Projects\\PoopLog\\src-tauri\\target\\release\\app.exe";
+    // Resolve the release exe relative to this script (works on any machine/checkout):
+    const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+    const exe = join(repoRoot, "src-tauri", "target", "release", "app.exe");
     const proc = spawn2(exe, [], { detached: false });
     await sleep(3000);
     const killed = proc.kill();

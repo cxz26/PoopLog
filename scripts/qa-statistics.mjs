@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { chromium } from "playwright";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const VIEWPORTS = [
   { w: 320, h: 800, name: "320px" },
@@ -93,7 +95,7 @@ async function main() {
           console.log(`  No element wider than viewport ✓`);
         }
         // Screenshot
-        const screenshotPath = `C:\\Users\\PC\\AppData\\Local\\Temp\\opencode\\qa-stats-${vp.w}.png`;
+        const screenshotPath = join(tmpdir(), `qa-stats-${vp.w}.png`);
         await page.screenshot({ path: screenshotPath, fullPage: true });
         console.log(`  Screenshot: ${screenshotPath}`);
       }

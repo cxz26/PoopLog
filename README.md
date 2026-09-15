@@ -2,7 +2,7 @@
 
 Local-first, offline-ready, private Windows desktop app for personal health tracking.
 
-**Status: Private Beta** — the application has passed a private beta release candidate audit and is in active internal testing.
+**Status: Public Beta** — feature-complete for beta testing, but still under active development. Expect rough edges; please report bugs. Not yet production-stable.
 
 ## Tech stack
 

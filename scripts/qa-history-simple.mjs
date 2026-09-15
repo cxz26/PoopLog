@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { chromium } from "playwright";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const VIEWPORTS = [
   { w: 320, h: 800, name: "320px" },
@@ -29,7 +31,7 @@ async function main() {
         return { scrollWidth: doc.scrollWidth, clientWidth: doc.clientWidth, hasHScroll: doc.scrollWidth > doc.clientWidth + 1 };
       });
       console.log(`  H overflow: ${!overflow.hasHScroll ? "✓" : "✗"} ${overflow.scrollWidth}/${overflow.clientWidth}`);
-      const screenshotPath = `C:\\Users\\PC\\AppData\\Local\\Temp\\opencode\\qa-history-${vp.w}.png`;
+      const screenshotPath = join(tmpdir(), `qa-history-${vp.w}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`  Screenshot: ${screenshotPath}`);
       // Test delete confirm

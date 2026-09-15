@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 import { chromium } from "playwright";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { mkdirSync } from "node:fs";
 
 const VIEWPORTS = [
   { w: 320, h: 800, name: "320px" },
@@ -67,7 +70,7 @@ async function main() {
       });
       if (overflows.length > 0) console.log(`  Overflow elements: ${JSON.stringify(overflows)}`);
       else console.log(`  No element wider than viewport ✓`);
-      const screenshotPath = `C:\\Users\\PC\\AppData\\Local\\Temp\\opencode\\qa-backup-${vp.w}.png`;
+      const screenshotPath = join(tmpdir(), `qa-backup-${vp.w}.png`);
       await page.screenshot({ path: screenshotPath, fullPage: true });
       console.log(`  Screenshot: ${screenshotPath}`);
       console.log(`  ✓ Passed ${vp.name}`);
