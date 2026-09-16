@@ -1,0 +1,9 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Default capability set for PoopLog (Phase 1: minimal)",
+  "windows": ["main"],
+  "permissions": [
+    "core:default"
+  ]
+}
