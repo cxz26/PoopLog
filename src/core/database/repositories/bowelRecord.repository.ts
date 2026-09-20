@@ -2,7 +2,8 @@
  * BowelRecordRepository — typed CRUD + tag junction + transactions.
  */
 
-import { dbExecute, dbSelect, withTransaction } from "../connection";
+import { dbExecute, dbSelect } from "../connection";
+import { sqlLit, executeScript } from "../sqlScript";
 import {
   assertBristol,
   assertPain,
@@ -121,11 +122,12 @@ export async function update(
 }
 
 export async function remove(id: number): Promise<void> {
-  await withTransaction(async (db) => {
-    // bowel_record_tags cascade deletes via FK, but explicit delete is safe
-    await db.execute("DELETE FROM bowel_record_tags WHERE bowel_record_id = $1", [id]);
-    await db.execute("DELETE FROM bowel_records WHERE id = $1", [id]);
-  });
+  // bowel_record_tags cascade deletes via FK, but explicit delete is safe.
+  // One script → atomic (a pooled standalone transaction is not safe, see sqlScript.ts).
+  await executeScript([
+    `DELETE FROM bowel_record_tags WHERE bowel_record_id = ${sqlLit(id)}`,
+    `DELETE FROM bowel_records WHERE id = ${sqlLit(id)}`,
+  ]);
 }
 
 // ---------------------------------------------------------------------------
@@ -147,17 +149,14 @@ export async function setTags(
 ): Promise<void> {
   const br = await getById(bowelRecordId);
   if (!br) throw new Error(`bowel_record ${bowelRecordId} not found`);
-  await withTransaction(async (db) => {
-    await db.execute("DELETE FROM bowel_record_tags WHERE bowel_record_id = $1", [
-      bowelRecordId,
-    ]);
-    for (const tagId of tagIds) {
-      await db.execute(
-        "INSERT OR IGNORE INTO bowel_record_tags (bowel_record_id, tag_id) VALUES ($1,$2)",
-        [bowelRecordId, tagId],
-      );
-    }
-  });
+  await assertTagsExist(tagIds);
+  await executeScript([
+    `DELETE FROM bowel_record_tags WHERE bowel_record_id = ${sqlLit(bowelRecordId)}`,
+    ...tagIds.map(
+      (tagId) =>
+        `INSERT OR IGNORE INTO bowel_record_tags (bowel_record_id, tag_id) VALUES (${sqlLit(bowelRecordId)}, ${sqlLit(tagId)})`,
+    ),
+  ]);
 }
 
 export async function addTag(bowelRecordId: number, tagId: number): Promise<void> {
@@ -175,51 +174,53 @@ export async function removeTag(bowelRecordId: number, tagId: number): Promise<v
 }
 
 /**
- * Transactional helper: create bowel record + attach tags atomically.
+ * Pre-validate tag ids against the tags table so a foreign-key violation can
+ * never fire mid-script (a mid-script failure leaves an open transaction on
+ * the pooled connection that must be rolled back — avoidable, so avoid it).
+ */
+async function assertTagsExist(tagIds: number[]): Promise<void> {
+  if (tagIds.length === 0) return;
+  const unique = [...new Set(tagIds)];
+  const placeholders = unique.map((_, i) => `$${i + 1}`).join(",");
+  const rows = await dbSelect<{ id: number }>(
+    `SELECT id FROM tags WHERE id IN (${placeholders})`,
+    unique,
+  );
+  const found = new Set(rows.map((r) => r.id));
+  const missing = unique.filter((id) => !found.has(id));
+  if (missing.length > 0) throw new Error(`Unknown tag id(s): ${missing.join(", ")}`);
+}
+
+/**
+ * Create a bowel record + attach tags atomically (single-script execute).
  */
 export async function createWithTags(
   input: Parameters<typeof create>[0],
   tagIds: number[] = [],
 ): Promise<BowelRecord> {
-  return withTransaction(async (db) => {
-    assertBristol(input.bristol_type ?? null);
-    assertPain(input.pain_level ?? null);
-    assertApproximateLabel(input.approximate_time_label ?? null);
-    const ts = nowIso();
-    await db.execute(
-      `INSERT INTO bowel_records
-        (daily_checkin_id, occurred_at, time_type, approximate_time_label, bristol_type, amount, difficulty, pain_level, color, notes, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$11)`,
-      [
-        input.daily_checkin_id,
-        input.occurred_at ?? null,
-        input.time_type,
-        input.approximate_time_label ?? null,
-        input.bristol_type ?? null,
-        input.amount ?? null,
-        input.difficulty ?? null,
-        input.pain_level ?? null,
-        input.color ?? null,
-        input.notes ?? null,
-        ts,
-      ],
-    );
-    const rows = await db.select<{ id: number }>(
-      "SELECT id FROM bowel_records WHERE daily_checkin_id = $1 ORDER BY id DESC LIMIT 1",
-      [input.daily_checkin_id],
-    );
-    const newId = rows[0]?.id;
-    if (!newId) throw new Error("createWithTags: failed to get inserted id");
-    for (const tagId of tagIds) {
-      await db.execute(
-        "INSERT OR IGNORE INTO bowel_record_tags (bowel_record_id, tag_id) VALUES ($1,$2)",
-        [newId, tagId],
-      );
-    }
-    const created = await db.select<BowelRecord>(
-      "SELECT * FROM bowel_records WHERE id = $1 LIMIT 1",
-      [newId],
-    );
-    return created[0];
-  });
+  assertBristol(input.bristol_type ?? null);
+  assertPain(input.pain_level ?? null);
+  assertApproximateLabel(input.approximate_time_label ?? null);
+  if (input.time_type !== "exact" && input.time_type !== "approximate")
+    throw new Error("time_type must be 'exact' or 'approximate'");
+  await assertTagsExist(tagIds);
+  const ts = nowIso();
+  await executeScript([
+    `INSERT INTO bowel_records
+       (daily_checkin_id, occurred_at, time_type, approximate_time_label, bristol_type, amount, difficulty, pain_level, color, notes, created_at, updated_at)
+      VALUES (${sqlLit(input.daily_checkin_id)}, ${sqlLit(input.occurred_at ?? null)}, ${sqlLit(input.time_type)}, ${sqlLit(input.approximate_time_label ?? null)}, ${sqlLit(input.bristol_type ?? null)}, ${sqlLit(input.amount ?? null)}, ${sqlLit(input.difficulty ?? null)}, ${sqlLit(input.pain_level ?? null)}, ${sqlLit(input.color ?? null)}, ${sqlLit(input.notes ?? null)}, ${sqlLit(ts)}, ${sqlLit(ts)})`,
+    // Reference the just-inserted row via subquery — last_insert_rowid() is
+    // overwritten by every INSERT (including junction rows), so it cannot be
+    // used for the second and later tag statements.
+    ...tagIds.map(
+      (tagId) =>
+        `INSERT OR IGNORE INTO bowel_record_tags (bowel_record_id, tag_id) SELECT (SELECT id FROM bowel_records WHERE daily_checkin_id = ${sqlLit(input.daily_checkin_id)} ORDER BY id DESC LIMIT 1), ${sqlLit(tagId)}`,
+    ),
+  ]);
+  const rows = await dbSelect<BowelRecord>(
+    "SELECT * FROM bowel_records WHERE daily_checkin_id = $1 ORDER BY id DESC LIMIT 1",
+    [input.daily_checkin_id],
+  );
+  if (!rows[0]) throw new Error("createWithTags: failed to get inserted id");
+  return rows[0];
 }

@@ -26,6 +26,7 @@
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
     "fs:allow-read-dir",
+    "fs:allow-stat",
     "fs:scope-app-recursive",
     "core:path:default",
     "core:path:allow-resolve-directory"

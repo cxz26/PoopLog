@@ -3,7 +3,7 @@ import { PinInput } from "../../shared/components/PinInput";
 import { Button } from "../../shared/components/Button";
 import { Card } from "../../shared/components/Card";
 import { ConfirmDialog } from "../../shared/components/ConfirmDialog";
-import { hashPin, saveSecurityRecord, loadSecurityRecord, verifyPin, clearSecurityRecord, clearAttempts } from "../../core/security/pinService";
+import { hashPin, saveSecurityRecord, loadSecurityRecord, verifyPin, clearSecurityRecord, clearAttempts, validatePinStrength } from "../../core/security/pinService";
 import { useSecurityStore } from "../../core/security/securityStore";
 
 interface Props {
@@ -33,6 +33,12 @@ export function SecuritySettings({ onLockNow }: Props) {
     }
     if (!/^\d{4,8}$/.test(newPin)) {
       setError("New PIN must be 4–8 digits.");
+      return;
+    }
+    try {
+      validatePinStrength(newPin);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
       return;
     }
     const rec = loadSecurityRecord();

@@ -9,10 +9,58 @@ import { validateBackupPayload } from "./backupService";
 import type { BackupFile } from "./backupTypes";
 import { createSafetyBackup, listSafetyBackups } from "./safetyBackup";
 import { getDatabase } from "../database/connection";
+import { sqlLit, executeScript } from "../database/sqlScript";
 import { isTauri } from "../utils/platform";
 
 const CURRENT_FORMAT_VERSION = 1;
 const CURRENT_SCHEMA_VERSION = 3;
+
+// Builtin tag seeds introduced by schema migration v3 (category, name) — see
+// migrations.ts "003_difficulty_very_easy_and_complete_tags".
+const V3_BUILTIN_TAG_SEEDS: ReadonlyArray<readonly [string, string]> = [
+  ["symptom", "Blood"],
+  ["symptom", "Mucus"],
+  ["symptom", "Incomplete Evacuation"],
+  ["food", "Spicy Food"],
+  ["food", "Coffee"],
+  ["food", "Milk"],
+  ["food", "BBQ"],
+  ["food", "Fast Food"],
+  ["food", "Seafood"],
+  ["food", "High Fiber"],
+  ["food", "Oily Food"],
+  ["medication", "Antibiotics"],
+  ["medication", "Painkillers"],
+  ["exercise", "Gym"],
+  ["exercise", "Basketball"],
+  ["exercise", "Cycling"],
+  ["exercise", "Swimming"],
+];
+
+/**
+ * Upgrade a validated v2 backup payload to v3, in memory.
+ * - schemaVersion → 3
+ * - appends the v3 builtin tag seeds (skipping any name the v2 data already
+ *   has, so a user-created tag with the same name wins)
+ * v2 bowel-record values (difficulty without "very_easy") are already valid
+ * under the v3 CHECK constraints — no record mutation happens.
+ */
+export function migratePayloadV2toV3(payload: import("./backupTypes").BackupPayload): import("./backupTypes").BackupPayload {
+  const existing = new Set(payload.data.tags.map((t) => `${t.category}:${t.name}`));
+  const added: import("./backupTypes").BackupPayload["data"]["tags"] = [];
+  for (const [category, name] of V3_BUILTIN_TAG_SEEDS) {
+    if (!existing.has(`${category}:${name}`)) {
+      existing.add(`${category}:${name}`);
+      added.push({ category: category as "symptom", name, is_builtin: 1, created_at: payload.exportedAt, updated_at: payload.exportedAt });
+    }
+  }
+  return {
+    ...payload,
+    schemaVersion: 3,
+    counts: { ...payload.counts, tags: payload.counts.tags + added.length },
+    data: { ...payload.data, tags: [...payload.data.tags, ...added] },
+  };
+}
 
 export interface RestoreResult {
   success: boolean;
@@ -46,7 +94,7 @@ export async function restoreBackupFile(backupFile: BackupFile, password: string
     return { success: false, error: `${first.code}: ${first.path} ${first.message}`, code: first.code };
   }
 
-  const typedPayload = payload as import("./backupTypes").BackupPayload;
+  let typedPayload = payload as import("./backupTypes").BackupPayload;
 
   // 5. Check formatVersion
   if (typedPayload.schemaVersion !== undefined) {
@@ -60,11 +108,19 @@ export async function restoreBackupFile(backupFile: BackupFile, password: string
   if (typedPayload.schemaVersion > CURRENT_SCHEMA_VERSION) {
     return { success: false, error: "Backup schema too new, update PoopLog", code: "BACKUP_SCHEMA_TOO_NEW" };
   }
-  if (typedPayload.schemaVersion < CURRENT_SCHEMA_VERSION) {
-    // For MVP, reject too old unless migration exists; we have migrations 1-3, so if payload is 2 and current is 3, we could migrate, but spec says reject unless explicit migration exists
-    // For now, reject if <3 and >0, but allow 3==3 only
-    if (typedPayload.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-      return { success: false, error: "Backup schema too old, migration required", code: "BACKUP_SCHEMA_TOO_OLD" };
+  if (typedPayload.schemaVersion < 2) {
+    return { success: false, error: "Backup schema too old, migration required", code: "BACKUP_SCHEMA_TOO_OLD" };
+  }
+  // v2 → v3: upgrade the payload in memory. NEVER run DB migrations against
+  // backup JSON — the transform only bumps schemaVersion and adds the v3
+  // builtin tag seeds that a v2-era database never had (v2 difficulty values
+  // are a subset of the v3 CHECK constraint, so no record changes are needed).
+  if (typedPayload.schemaVersion === 2) {
+    typedPayload = migratePayloadV2toV3(typedPayload);
+    const revalidation = validateBackupPayload(typedPayload);
+    if (!revalidation.valid) {
+      const first = revalidation.errors[0];
+      return { success: false, error: `${first.code}: ${first.path} ${first.message}`, code: first.code };
     }
   }
 
@@ -91,22 +147,6 @@ export async function restoreBackupFile(backupFile: BackupFile, password: string
   return { success: true, safetyBackupPath: safetyPath };
 }
 
-// SQL literal helper for the single-script atomic replace. Payload values are
-// already deep-validated (types, ranges, uniqueness, orphans), so only string
-// escaping and NUL detection are needed here.
-function sqlLit(v: unknown): string {
-  if (v === null || v === undefined) return "NULL";
-  if (typeof v === "number") {
-    if (!Number.isFinite(v)) throw new Error("Restore payload contains a non-finite number");
-    return String(v);
-  }
-  if (typeof v === "string") {
-    if (v.includes("\u0000")) throw new Error("Restore payload contains a NUL character");
-    return `'${v.replace(/'/g, "''")}'`;
-  }
-  throw new Error(`Restore payload contains an unsupported value type: ${typeof v}`);
-}
-
 async function atomicReplace(payload: import("./backupTypes").BackupPayload): Promise<void> {
   const db = await getDatabase();
   if (!db) throw new Error("Database not initialized");
@@ -120,8 +160,8 @@ async function atomicReplace(payload: import("./backupTypes").BackupPayload): Pr
   // can reference them without inter-statement SELECTs.
   const stmts: string[] = [];
 
-  // Delete in dependency-safe order (foreign keys stay enforced)
-  stmts.push("BEGIN IMMEDIATE;");
+  // Delete in dependency-safe order (foreign keys stay enforced).
+  // (executeScript wraps the body in BEGIN IMMEDIATE … COMMIT itself.)
   stmts.push("DELETE FROM bowel_record_tags;");
   stmts.push("DELETE FROM bowel_records;");
   stmts.push("DELETE FROM sleep_records;");
@@ -181,22 +221,11 @@ async function atomicReplace(payload: import("./backupTypes").BackupPayload): Pr
     if (dailyCheckinId == null) throw new Error(`Orphan menstrual daily_checkin_date ${m.daily_checkin_date}`);
     stmts.push(`INSERT INTO menstrual_records (daily_checkin_id, has_period, flow, pain_level, notes, created_at, updated_at) VALUES (${dailyCheckinId}, ${sqlLit(m.has_period)}, ${sqlLit(m.flow)}, ${sqlLit(m.pain_level)}, ${sqlLit(m.notes)}, ${sqlLit(m.created_at)}, ${sqlLit(m.updated_at)})`);
   }
-  stmts.push("COMMIT;");
 
   // sqlLit() has already validated every value — nothing has executed yet, so
-  // throwing here leaves the database untouched.
-  const script = stmts.join(";\n") + ";";
-
-  try {
-    await db.execute(script);
-  } catch (e) {
-    // Best-effort rollback; if the script failed the transaction was never
-    // committed, so the original data is still intact either way.
-    try {
-      await db.execute("ROLLBACK;");
-    } catch {}
-    throw e;
-  }
+  // throwing here leaves the database untouched. executeScript wraps the body
+  // in BEGIN IMMEDIATE … COMMIT and best-effort-rolls-back on failure.
+  await executeScript(stmts);
 
   // Foreign keys stayed enforced throughout; belt-and-braces integrity check.
   const fkCheck = await db.select<Record<string, unknown>>("PRAGMA foreign_key_check;");
@@ -206,7 +235,8 @@ async function atomicReplace(payload: import("./backupTypes").BackupPayload): Pr
 export async function restoreSafetyBackup(password: string): Promise<RestoreResult> {
   const safetyFiles = await listSafetyBackups();
   if (safetyFiles.length === 0) return { success: false, error: "No safety backup found", code: "NO_SAFETY_BACKUP" };
-  const latest = safetyFiles[safetyFiles.length - 1];
+  // listSafetyBackups is newest-first (mtime → embedded timestamp → name)
+  const latest = safetyFiles[0];
   let content: string;
   if (isTauri()) {
     const { readTextFile } = await import("@tauri-apps/plugin-fs");

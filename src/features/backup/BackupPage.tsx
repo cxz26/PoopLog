@@ -163,7 +163,7 @@ export function BackupPage() {
       const validation = validateBackupPayload(payload);
       if (!validation.valid) throw new Error(`Backup validation failed: ${validation.errors[0].message}`);
       if (payload.schemaVersion > 3) throw new Error("This backup was created by a newer version of PoopLog. Update PoopLog before restoring it.");
-      if (payload.schemaVersion < 3) throw new Error("This backup format is not supported by this version of PoopLog.");
+      if (payload.schemaVersion < 2) throw new Error("This backup format is not supported by this version of PoopLog.");
       const range = getBackupDateRange(payload);
       const customTags = payload.data.tags.filter((t: { is_builtin: number }) => t.is_builtin === 0).length;
       setRestorePreview({

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { PinInput, PinKeypad } from "../../shared/components/PinInput";
 import { Button } from "../../shared/components/Button";
 import { useSecurityStore } from "../../core/security/securityStore";
-import { loadSecurityRecord, verifyPin, recordFailedAttempt, recordSuccess, getRemainingCooldown, getFailedCount, isInCooldown } from "../../core/security/pinService";
+import { loadSecurityRecord, verifyPin, recordFailedAttempt, recordSuccess, getRemainingCooldown, getFailedCount, isInCooldown, upgradeSecurityRecordIfLegacy } from "../../core/security/pinService";
 
 interface Props {
   onUnlock: () => void;
@@ -72,6 +72,9 @@ export function LockScreen({ onUnlock }: Props) {
     try {
       const ok = await verifyPin(pin, rec);
       if (ok) {
+        // Lazily rehash legacy (v1) verifiers with current KDF parameters after
+        // a successful unlock. Best-effort: never blocks or fails the unlock.
+        upgradeSecurityRecordIfLegacy(pin, rec).catch(() => {});
         recordSuccess();
         setFailed(0);
         setError(null);

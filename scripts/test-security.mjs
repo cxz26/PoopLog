@@ -50,7 +50,7 @@ try {
   pinService.saveSecurityRecord(rec);
   assert(pinService.hasPin(), "hasPin true after create");
   assert(rec.salt && rec.hash, "salt and hash present");
-  assert(rec.iterations === 120000, "iterations 120000");
+  assert(rec.version === 2 && rec.iterations === pinService.KDF_V2_ITERATIONS, `versioned v2 KDF parameters (version ${rec.version}, ${rec.iterations} iterations)`);
   assert(rec.algorithm === "PBKDF2-SHA-256", "algorithm PBKDF2-SHA-256");
   assert(!rec.hash.includes(pin), "hash does not contain plaintext PIN");
   assert(pinService.isPinSetupDone(), "setup done after create");

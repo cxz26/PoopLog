@@ -9,7 +9,12 @@ const ATTEMPTS_KEY = "pooplog_security_attempts_v1";
 const SETUP_DONE_KEY = "pooplog_pin_setup_done_v1";
 
 export interface SecurityRecord {
-  version: 1;
+  /**
+   * KDF parameter version, stored WITH the verifier so old records stay
+   * verifiable: v1 = PBKDF2-SHA-256 @ 120k iterations, v2 = @ 600k.
+   * Upgrade path: verify with stored params, then rehash on successful unlock.
+   */
+  version: 1 | 2;
   algorithm: "PBKDF2-SHA-256";
   iterations: number;
   salt: string; // base64
@@ -17,7 +22,10 @@ export interface SecurityRecord {
   createdAt: string;
 }
 
-const ITERATIONS = 120_000;
+/** Legacy parameters — still accepted for verification, upgraded on unlock. */
+export const KDF_V1_ITERATIONS = 120_000;
+/** Current parameters — used for all new/changed PINs and lazy upgrades. */
+export const KDF_V2_ITERATIONS = 600_000;
 const SALT_BYTES = 16;
 const KEY_BITS = 256;
 
@@ -61,11 +69,11 @@ export async function hashPin(pin: string): Promise<SecurityRecord> {
   const saltBytes = new Uint8Array(SALT_BYTES);
   window.crypto.getRandomValues(saltBytes);
   const salt = bufToBase64(saltBytes.buffer);
-  const hash = await deriveHash(pin, salt, ITERATIONS);
+  const hash = await deriveHash(pin, salt, KDF_V2_ITERATIONS);
   return {
-    version: 1,
+    version: 2,
     algorithm: "PBKDF2-SHA-256",
-    iterations: ITERATIONS,
+    iterations: KDF_V2_ITERATIONS,
     salt,
     hash,
     createdAt: new Date().toISOString(),
@@ -82,9 +90,63 @@ export async function verifyPin(pin: string, record: SecurityRecord): Promise<bo
   return diff === 0;
 }
 
+/** True when a stored verifier still uses legacy KDF parameters (v1). */
+export function needsKdfUpgrade(record: SecurityRecord): boolean {
+  return record.version < 2 || record.iterations < KDF_V2_ITERATIONS;
+}
+
+/**
+ * Lazily upgrade a legacy verifier after a SUCCESSFUL unlock: rehash the
+ * just-entered PIN with current (v2) parameters and persist. Never throws to
+ * the unlock flow — callers use .catch(() => {}).
+ */
+export async function upgradeSecurityRecordIfLegacy(pin: string, record: SecurityRecord): Promise<SecurityRecord | null> {
+  if (!needsKdfUpgrade(record)) return null;
+  const upgraded = await hashPin(pin);
+  saveSecurityRecord(upgraded);
+  return upgraded;
+}
+
 export function validatePinFormat(pin: string): void {
   if (!pin || typeof pin !== "string") throw new Error("PIN is required");
   if (!/^\d{4,8}$/.test(pin)) throw new Error("PIN must be 4–8 digits");
+}
+
+// --- weak-PIN prevention (create/change ONLY — never applied during unlock) ---
+
+/** Well-known common PINs not fully covered by the repeated/sequential rules. */
+const COMMON_PINS = new Set([
+  "1000", "1010", "1122", "1212", "1314", "2000", "2001", "2020",
+  "2121", "2211", "2580", "0852", "4321", "6969", "1234", "1230", "1004", "0007",
+]);
+
+/** True if every adjacent digit steps by exactly +1 (e.g. 1234, 45678). */
+function isAscendingRun(pin: string): boolean {
+  for (let i = 1; i < pin.length; i++) {
+    if (pin.charCodeAt(i) - pin.charCodeAt(i - 1) !== 1) return false;
+  }
+  return true;
+}
+
+/** True if every adjacent digit steps by exactly -1 (e.g. 9876, 54321). */
+function isDescendingRun(pin: string): boolean {
+  for (let i = 1; i < pin.length; i++) {
+    if (pin.charCodeAt(i) - pin.charCodeAt(i - 1) !== -1) return false;
+  }
+  return true;
+}
+
+/**
+ * Reject clearly weak PINs when CREATING or CHANGING a PIN:
+ * repeated digits (1111), ascending/descending runs (1234, 8765), and a
+ * common-PIN blocklist. Existing PINs are never re-validated at unlock.
+ */
+export function validatePinStrength(pin: string): void {
+  validatePinFormat(pin);
+  if (/^(\d)\1+$/.test(pin)) throw new Error("PIN is too weak: repeated digits are not allowed");
+  if (isAscendingRun(pin)) throw new Error("PIN is too weak: sequential digits are not allowed");
+  if (isDescendingRun(pin)) throw new Error("PIN is too weak: sequential digits are not allowed");
+  if (COMMON_PINS.has(pin)) throw new Error("PIN is too weak: this is one of the most common PINs");
 }
 
 // Storage (localStorage — Tauri WebView persists per app data; hash only, never plaintext)
@@ -93,7 +155,9 @@ export function loadSecurityRecord(): SecurityRecord | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const rec = JSON.parse(raw) as SecurityRecord;
-    if (rec.version !== 1 || !rec.salt || !rec.hash) return null;
+    // v1 (120k iterations) records remain valid for verification and are
+    // upgraded lazily on successful unlock; unknown versions are rejected.
+    if ((rec.version !== 1 && rec.version !== 2) || !rec.salt || !rec.hash) return null;
     return rec;
   } catch {
     return null;

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { PinInput } from "../../shared/components/PinInput";
 import { Button } from "../../shared/components/Button";
 import { Card } from "../../shared/components/Card";
-import { hashPin, saveSecurityRecord } from "../../core/security/pinService";
+import { hashPin, saveSecurityRecord, validatePinStrength } from "../../core/security/pinService";
 
 interface Props {
   onComplete: () => void;
@@ -27,6 +27,12 @@ export function PinSetup({ onComplete, onSkip }: Props) {
     }
     if (!/^\d{4,8}$/.test(pin)) {
       setError("PIN must be 4–8 digits.");
+      return;
+    }
+    try {
+      validatePinStrength(pin);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
       return;
     }
     setSaving(true);
