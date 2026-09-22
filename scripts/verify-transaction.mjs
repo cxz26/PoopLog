@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regression test: multi-statement repository operations are atomic single-script executes.
-// Red-team finding: withTransaction() is a no-op on the Tauri path, so
+// Security review finding: withTransaction() is a no-op on the Tauri path, so
 // createWithTags/setTags/remove ran as separate non-atomic statements.
 // Fix: they now build ONE script executed via a single db.execute() call.
 // Run with: npx tsx scripts/verify-transaction.mjs

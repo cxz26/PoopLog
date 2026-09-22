@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Regression test: PIN KDF versioning + lazy upgrade + weak-PIN prevention.
-// Red-team findings addressed:
+// Security review findings addressed:
 //  - PBKDF2 was fixed at 120k iterations with no upgrade path
 //  - no common/weak PIN prevention on create/change
 // Overstated findings NOT acted on (documented):

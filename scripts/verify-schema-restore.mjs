@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Regression test: schemaVersion 2 backups can be restored via in-memory
 // payload upgrade (migratePayloadV2toV3). v1 and >v3 remain rejected.
-// The red-team suggested "run migrations during restore" — deliberately NOT
+// An alternative approach was to "run migrations during restore" — deliberately NOT
 // done: migrations are SQL for the live database, never applied to backup JSON.
 // Run with: npx tsx scripts/verify-schema-restore.mjs
 
